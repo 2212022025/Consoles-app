@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Realistic Fruit Cutter - Ultimate Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+        /* --- GLOBAL & RESET --- */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+            font-family: 'Bangers', cursive;
+            touch-action: none;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* --- BACKGROUND SCENE (From Request) --- */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #2b32b2, #1488cc, #ffb347);
+            overflow: hidden;
+            z-index: 1; /* Background Layer */
+        }
+
+        .sun {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(to bottom, #fff, #ffd700);
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.6), 0 0 80px rgba(255, 165, 0, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: sun-pulse 8s infinite alternate ease-in-out;
+            z-index: 2;
+        }
+        @keyframes sun-pulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; box-shadow: 0 0 60px rgba(255, 215, 0, 0.8); }
+        }
+
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50px;
+            filter: blur(8px);
+            z-index: 3;
+            opacity: 0.8;
+            animation: float 60s linear infinite;
+        }
+        .cloud::after, .cloud::before { content: ''; position: absolute; background: inherit; border-radius: 50%; }
+        .c1 { width: 120px; height: 40px; top: 20%; left: -150px; animation-duration: 45s; }
+        .c1::after { width: 50px; height: 50px; top: -25px; left: 20px; }
+        .c1::before { width: 40px; height: 40px; top: -15px; left: 60px; }
+        .c2 { width: 180px; height: 50px; top: 10%; left: -200px; animation-duration: 65s; animation-delay: 5s; transform: scale(1.2); }
+        .c2::after { width: 70px; height: 70px; top: -35px; left: 30px; }
+        .c2::before { width: 60px; height: 60px; top: -25px; left: 80px; }
+        .c3 { width: 100px; height: 30px; top: 30%; left: -120px; animation-duration: 35s; animation-delay: 2s; opacity: 0.5; }
+        @keyframes float { 0% { transform: translateX(0); } 100% { transform: translateX(120vw); } }
+
+        .mountain-back {
+            position: absolute; bottom: 0; width: 100%; height: 45%;
+            background: linear-gradient(to bottom, #4a569d, #3f4c6b);
+            clip-path: polygon(0% 100%, 15% 40%, 35% 80%, 50% 30%, 65% 75%, 85% 20%, 100% 100%);
+            z-index: 4;
+        }
+        .mountain-front {
+            position: absolute; bottom: 0; width: 100%; height: 35%;
+            background: linear-gradient(to bottom, #24243e, #141e30);
+            clip-path: polygon(0% 100%, 0% 80%, 20% 20%, 40% 90%, 60% 30%, 80% 85%, 100% 50%, 100% 100%);
+            z-index: 5;
+        }
+        .terrain {
+            position: absolute; bottom: 0; width: 100%; height: 15%;
+            background: #0f1319; z-index: 6;
+            border-radius: 50% 50% 0 0 / 20px 20px 0 0;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.3);
+        }
+
+        .tree { position: absolute; bottom: 14%; z-index: 7; display: flex; flex-direction: column; align-items: center; animation: sway 3s ease-in-out infinite alternate; transform-origin: bottom center; }
+        .trunk { width: 6px; height: 20px; background: #0b0d11; }
+        .leaves { width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 50px solid #1a1f29; margin-bottom: -15px; position: relative; }
+        .leaves::after { content: ''; position: absolute; top: 5px; left: -15px; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 40px solid #232a35; }
+        @keyframes sway { 0% { transform: rotate(0deg); } 100% { transform: rotate(1.5deg); } }
+        .t1 { left: 10%; transform: scale(1.2); } .t2 { left: 15%; transform: scale(0.8); bottom: 13%; } .t3 { left: 80%; transform: scale(1.5); z-index: 8; } .t4 { left: 85%; } .t5 { left: 88%; transform: scale(0.6); bottom: 13%; }
+        .hero-tree { left: 5%; bottom: 12%; transform: scale(2); z-index: 9; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.5)); }
+        .hero-tree .leaves { border-bottom-color: #000; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.4) 100%); }
+
+        /* --- GAME CANVAS --- */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: block;
+            background: transparent; /* Transparent to show landscape */
+            cursor: none;
+            z-index: 20; /* Above landscape */
+        }
+
+        /* --- UI & MENUS --- */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 30;
+        }
+
+        #score-board {
+            padding: 20px;
+            font-size: 45px;
+            color: #ffeb3b;
+            text-shadow: 3px 3px 0 #000;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            transition: color 0.1s;
+        }
+
+        /* --- FEATURE: Score Blink Effect --- */
+        @keyframes scoreBlink {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.3); filter: brightness(2) drop-shadow(0 0 10px gold); color: #fff; }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        
+        .score-blink {
+            animation: scoreBlink 0.2s ease-in-out;
+            transform-origin: left center; /* Keeps it aligned to left when scaling */
+        }
+
+        #high-score-label {
+            font-size: 20px;
+            color: #ff9500;
+            margin-top: -5px;
+        }
+        
+        /* NEW: Time Label Style */
+        #time-label {
+            font-size: 20px;
+            color: #00e5ff; /* Cyan color to distinguish from score */
+            margin-top: 5px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        #score-board span { color: #fff; }
+
+        #menu, #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            z-index: 40;
+        }
+
+        h1 {
+            font-size: 80px;
+            color: #ff5e00;
+            background: -webkit-linear-gradient(#ffae00, #ff4800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+            letter-spacing: 2px;
+        }
+
+        p { color: white; font-size: 24px; margin-bottom: 30px; }
+        
+        /* Spacing for multiple stats in Game Over */
+        .stats-container p {
+            margin: 10px 0;
+            font-size: 30px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 30px;
+            font-family: 'Bangers', cursive;
+            color: white;
+            background: linear-gradient(45deg, #ff4b1f, #ff9068);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 75, 31, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+            pointer-events: auto;
+            margin-top: 20px;
+        }
+        .btn:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(255, 75, 31, 0.6); }
+        .btn:active { transform: scale(0.95); }
+        .hidden { display: none !important; }
+        
+        @keyframes flash {
+            0% { background-color: white; }
+            100% { background-color: transparent; }
+        }
+        .flash-screen { animation: flash 0.5s ease-out; }
+    </style>
+</head>
+<body>
+
+    <!-- BACKGROUND LANDSCAPE -->
+    <div class="scene">
+        <div class="overlay"></div>
+        <div class="sun"></div>
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="cloud c3"></div>
+        <div class="mountain-back"></div>
+        <div class="mountain-front"></div>
+        <div class="terrain"></div>
+        <div class="tree t1"><div class="leaves"></div><div class="leaves"></div><div class="leaves"></div><div class="trunk"></div></div>
+        <div class="tree t2"><div class="leaves"></div><div class="leaves"></div><div class="trunk"></div></div>
+        <div class="tree t3"><div class="leaves"></div><div class="leaves"></div><div class="leaves"></div><div class="trunk"></div></div>
+        <div class="tree t4"><div class="leaves"></div><div class="leaves"></div><div class="trunk"></div></div>
+        <div class="tree t5"><div class="leaves"></div><div class="leaves"></div><div class="trunk"></div></div>
+        <div class="tree hero-tree"><div class="leaves"></div><div class="leaves"></div><div class="leaves"></div><div class="leaves"></div><div class="trunk"></div></div>
+    </div>
+
+    <!-- UI LAYER -->
+    <div class="ui-layer">
+        <div id="score-board">
+            <!-- WRAPPED SCORE IN DIV WITH ID -->
+            <div id="score-line">Score: <span id="score">0</span></div>
+            <div id="high-score-label">Best: <span id="high-score">0</span></div>
+            <!-- Time Label -->
+            <div id="time-label">Time: <span id="game-time">00:00</span></div>
+        </div>
+    </div>
+
+    <!-- MENUS -->
+    <div id="menu">
+        <h1>FRUIT SLICER</h1>
+        <p>Pluse</p>
+        <button class="btn" onclick="startGame()">PLAY GAME</button>
+    </div>
+
+    <div id="game-over" class="hidden">
+        <h1>GAME OVER</h1>
+        <div class="stats-container">
+            <p>Final Score: <span id="final-score">0</span></p>
+            <!-- Final Time Display -->
+            <p>Total Time: <span id="final-time">00:00</span></p>
+        </div>
+        <button class="btn" onclick="startGame()">TRY AGAIN</button>
+    </div>
+
+    <!-- GAME CANVAS -->
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const scoreEl = document.getElementById('score');
+        const scoreBoard = document.getElementById('score-board');
+        // NEW: Select the specific score line div for animation
+        const scoreLine = document.getElementById('score-line');
+        
+        const highScoreEl = document.getElementById('high-score');
+        const finalScoreEl = document.getElementById('final-score');
+        const menuEl = document.getElementById('menu');
+        const gameOverEl = document.getElementById('game-over');
+        
+        // Time Elements
+        const gameTimeEl = document.getElementById('game-time');
+        const finalTimeEl = document.getElementById('final-time');
+
+        let score = 0;
+        let highScore = localStorage.getItem('fruitSlicerHiScore') || 0;
+        highScoreEl.innerText = highScore;
+
+        let gameRunning = false;
+        let animationId;
+        
+        // Time Variable
+        let startTime = 0;
+
+        // --- AUDIO SYSTEM ---
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playCutSound() {
+            if (!audioCtx) return;
+            // 🍉 Soft juicy noise
+            const bufferSize = audioCtx.sampleRate * 0.18;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = "bandpass";
+            filter.frequency.value = 1200;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+        }
+
+        function playBombSound() {
+            if (!audioCtx) return;
+            // 🔊 Low-frequency boom
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.6);
+
+            gain.gain.setValueAtTime(1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1);
+
+            // 💥 Noise blast
+            const bufferSize = audioCtx.sampleRate * 0.7;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.value = 700;
+
+            noise.connect(filter);
+            filter.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        // --- GAME LOGIC ---
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const FRUITS = [
+            { type: 'apple', icon: '🍎', color: '#ff3b30' },
+            { type: 'banana', icon: '🍌', color: '#ffcc00' },
+            { type: 'pineapple', icon: '🍍', color: '#ffcc00' },
+            { type: 'mango', icon: '🥭', color: '#ff9500' },
+            { type: 'peach', icon: '🍑', color: '#ff9f68' },
+            { type: 'strawberry', icon: '🍓', color: '#ff2d55' },
+            { type: 'watermelon', icon: '🍉', color: '#ff3b30' },
+            { type: 'grapes', icon: '🍇', color: '#af52de' }
+        ];
+
+        let entities = [];
+        let particles = [];
+        let scorePopups = []; 
+        let mousePath = [];
+        let mouseX = 0;
+        let mouseY = 0;
+        let isMouseDown = false;
+        
+        // Combo System Variables
+        let lastCutTime = 0;
+        let comboCount = 0;
+
+        const GRAVITY = 0.15; 
+        
+        // Helper: Format milliseconds to MM:SS
+        function formatTime(ms) {
+            let totalSeconds = Math.floor(ms / 1000);
+            let minutes = Math.floor(totalSeconds / 60);
+            let seconds = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        class ScorePopup {
+            constructor(x, y, text, isCombo = false) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.isCombo = isCombo;
+                this.alpha = 1;
+                this.life = 1.0;
+                this.scale = 1;
+            }
+            update() {
+                this.y -= 1.5;
+                this.life -= 0.02;
+                this.alpha = this.life;
+                if(this.isCombo) {
+                    this.scale = 1 + Math.sin(Date.now() / 50) * 0.2; // Pulse effect for combo
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.isCombo ? '#ffd700' : '#ffffff'; // Gold for combo
+                ctx.font = this.isCombo ? '40px Bangers' : '30px Bangers';
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = 'black';
+                
+                if(this.isCombo) {
+                    ctx.translate(this.x, this.y);
+                    ctx.scale(this.scale, this.scale);
+                    ctx.fillText(this.text, 0, 0);
+                } else {
+                    ctx.fillText(this.text, this.x, this.y);
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color, speed) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * speed;
+                this.vx = Math.cos(angle) * velocity;
+                this.vy = Math.sin(angle) * velocity;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.02 + 0.01;
+                this.size = Math.random() * 4 + 2;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.05;
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Entity {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = -(Math.random() * 5 + 10);
+                this.rotation = 0;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.2;
+                this.size = 60;
+                this.active = true;
+                this.type = type;
+                if (type === 'bomb') {
+                    this.icon = '💣';
+                    this.radius = 30;
+                } else {
+                    const data = FRUITS[Math.floor(Math.random() * FRUITS.length)];
+                    this.icon = data.icon;
+                    this.color = data.color;
+                    this.radius = 30;
+                }
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += GRAVITY;
+                this.rotation += this.rotationSpeed;
+                if (this.y > canvas.height + 50) this.active = false;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.font = `${this.size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 10;
+                ctx.fillText(this.icon, 0, 5);
+                ctx.restore();
+            }
+        }
+
+        const handleInputStart = (e) => { isMouseDown = true; updateMousePos(e); };
+        const handleInputMove = (e) => { if (isMouseDown) { updateMousePos(e); checkCollisions(); } };
+        const handleInputEnd = () => { isMouseDown = false; mousePath = []; };
+
+        function updateMousePos(e) {
+            if(e.touches) {
+                mouseX = e.touches[0].clientX;
+                mouseY = e.touches[0].clientY;
+            } else {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            }
+            mousePath.push({x: mouseX, y: mouseY, life: 1.0});
+            if(mousePath.length > 8) mousePath.shift();
+        }
+
+        ['mousedown', 'touchstart'].forEach(evt => window.addEventListener(evt, handleInputStart));
+        ['mousemove', 'touchmove'].forEach(evt => window.addEventListener(evt, handleInputMove));
+        ['mouseup', 'touchend'].forEach(evt => window.addEventListener(evt, handleInputEnd));
+
+        function checkCollisions() {
+            if(mousePath.length < 2) return;
+            const p2 = mousePath[mousePath.length - 1];
+            entities.forEach(entity => {
+                if (!entity.active) return;
+                const dx = entity.x - p2.x;
+                const dy = entity.y - p2.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                if (distance < entity.radius + 15) sliceEntity(entity);
+            });
+        }
+
+        function sliceEntity(entity) {
+            entity.active = false;
+            if (entity.type === 'bomb') {
+                playBombSound();
+                gameOver();
+            } else {
+                playCutSound();
+                
+                // COMBO LOGIC
+                const now = Date.now();
+                if (now - lastCutTime < 300) { // 300ms window for combo
+                    comboCount++;
+                } else {
+                    comboCount = 1;
+                }
+                lastCutTime = now;
+
+                let points = 10;
+                let text = "+10";
+                let isCombo = false;
+
+                if (comboCount > 1) {
+                    points = 10 + (comboCount * 5); // Bonus points
+                    text = `${comboCount}x COMBO!`;
+                    isCombo = true;
+                }
+
+                score += points;
+                scoreEl.innerText = score;
+                
+                // TRIGGER BLINK ANIMATION (Only on score line)
+                scoreLine.classList.remove('score-blink');
+                void scoreLine.offsetWidth; // Trigger reflow
+                scoreLine.classList.add('score-blink');
+
+                scorePopups.push(new ScorePopup(entity.x, entity.y, text, isCombo));
+                createExplosion(entity.x, entity.y, entity.color);
+            }
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 15; i++) particles.push(new Particle(x, y, color, 8));
+            particles.push(new Particle(x, y, 'white', 5));
+        }
+
+        function drawBlade() {
+            if (mousePath.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(mousePath[0].x, mousePath[0].y);
+            for (let i = 1; i < mousePath.length; i++) ctx.lineTo(mousePath[i].x, mousePath[i].y);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = 'white';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00ffff';
+            ctx.stroke();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#e0ffff';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        let spawnTimer = 0;
+        function spawner() {
+            spawnTimer++;
+            const currentRate = Math.max(20, 60 - Math.floor(score / 50));
+            if (spawnTimer > currentRate) {
+                spawnTimer = 0;
+                const count = Math.ceil(Math.random() * 3);
+                for(let i=0; i<count; i++) {
+                    const x = Math.random() * (canvas.width - 100) + 50;
+                    const y = canvas.height + 50;
+                    const type = Math.random() > 0.85 ? 'bomb' : 'fruit';
+                    setTimeout(() => { if(gameRunning) entities.push(new Entity(x, y, type)); }, i * 100);
+                }
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            
+            // Calculate final time
+            const endTime = Date.now();
+            const totalTimeMs = endTime - startTime;
+            finalTimeEl.innerText = formatTime(totalTimeMs);
+
+            if(score > highScore) {
+                highScore = score;
+                localStorage.setItem('fruitSlicerHiScore', highScore);
+                highScoreEl.innerText = highScore;
+            }
+
+            const overlay = document.createElement('div');
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.background = 'white';
+            overlay.classList.add('flash-screen');
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), 500);
+
+            canvas.style.transform = 'translate(5px, 5px)';
+            setTimeout(() => canvas.style.transform = 'translate(-5px, -5px)', 50);
+            setTimeout(() => canvas.style.transform = 'translate(0, 0)', 100);
+
+            finalScoreEl.innerText = score;
+            gameOverEl.classList.remove('hidden');
+        }
+
+        function startGame() {
+            initAudio(); // Initialize audio context on user gesture
+            
+            score = 0;
+            comboCount = 0;
+            scoreEl.innerText = '0';
+            
+            // Reset blink class on specific line
+            scoreLine.classList.remove('score-blink');
+            
+            // Start Timer
+            startTime = Date.now();
+            gameTimeEl.innerText = "00:00";
+
+            entities = [];
+            particles = [];
+            scorePopups = [];
+            mousePath = [];
+            gameRunning = true;
+            menuEl.classList.add('hidden');
+            gameOverEl.classList.add('hidden');
+            if (animationId) cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Update Timer
+            const currentSessionTime = Date.now() - startTime;
+            gameTimeEl.innerText = formatTime(currentSessionTime);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            spawner();
+
+            entities = entities.filter(e => e.active);
+            entities.forEach(e => { e.update(); e.draw(); });
+
+            particles = particles.filter(p => p.alpha > 0);
+            particles.forEach(p => { p.update(); p.draw(); });
+
+            scorePopups = scorePopups.filter(p => p.life > 0);
+            scorePopups.forEach(p => { p.update(); p.draw(); });
+
+            drawBlade();
+            if(!isMouseDown && mousePath.length > 0) mousePath.shift();
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>

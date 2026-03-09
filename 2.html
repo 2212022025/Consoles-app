@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>3D City - Burj Khalifa & Optimization</title>
+    <style>
+        /* CORE STYLES */
+        body { 
+            margin: 0; overflow: hidden; background-color: #5da6d0; 
+            font-family: 'Segoe UI', sans-serif; user-select: none; 
+            -webkit-user-select: none; touch-action: none;
+        }
+        #rotate-msg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; color: white; z-index: 3000;
+            display: none; align-items: center; justify-content: center;
+            font-size: 20px; text-transform: uppercase; letter-spacing: 2px;
+            text-align: center; padding: 20px;
+        }
+        @media screen and (orientation: portrait) { #rotate-msg { display: flex; } }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        /* MINIMAP */
+        #minimap-container {
+            position: absolute; top: 15px; right: 15px;
+            width: 140px; height: 140px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px; z-index: 20;
+            pointer-events: none; display: flex;
+            align-items: center; justify-content: center;
+        }
+
+        /* CONTROLS */
+        .control-group {
+            position: absolute; bottom: 30px; pointer-events: auto;
+            display: flex; gap: 15px; z-index: 100; 
+        }
+        #left-controls { left: 40px; flex-direction: column; align-items: center; }
+        #right-controls { right: 40px; align-items: flex-end; gap: 20px; }
+        
+        .game-btn {
+            width: 70px; height: 70px;
+            background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 50%;
+            color: white; font-size: 24px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            transition: transform 0.1s;
+        }
+        .game-btn:active { background: rgba(255, 255, 255, 0.4); transform: scale(0.95); }
+        #btn-jump { width: 80px; height: 80px; background: rgba(255, 200, 100, 0.2); border-color: rgba(255, 200, 100, 0.5); font-size: 16px; }
+        
+        #btn-fire {
+            width: 90px; height: 90px;
+            background: rgba(255, 50, 50, 0.3); border: 3px solid rgba(255, 100, 100, 0.8);
+            border-radius: 50%; color: white; font-size: 18px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4); margin-bottom: 20px;
+        }
+        #btn-fire:active { background: rgba(255, 50, 50, 0.6); transform: scale(0.95); }
+
+        #look-zone { position: absolute; top: 0; right: 0; width: 60%; height: 100%; pointer-events: auto; z-index: 1; }
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 24px; height: 24px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>') no-repeat center;
+            transform: translate(-50%, -50%); pointer-events: none; opacity: 0.8;
+        }
+        
+        #end-game-ui {
+            position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+            display: none; pointer-events: auto;
+        }
+        .menu-btn { padding: 10px 20px; background: #333; color: white; border: 2px solid white; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="rotate-msg">Please Rotate Device to Landscape</div>
+    <div id="canvas-container"></div>
+    <div id="ui-layer">
+        <div id="minimap-container"><canvas id="minimap" width="140" height="140"></canvas></div>
+        <div id="end-game-ui"><div id="restart-btn" class="menu-btn">RESET CITY</div></div>
+        <div id="crosshair"></div>
+        <div id="left-controls" class="control-group">
+            <div class="game-btn" id="btn-fwd">▲</div>
+            <div class="game-btn" id="btn-back">▼</div>
+        </div>
+        <div id="right-controls" class="control-group">
+            <div class="game-btn" id="btn-jump">JUMP</div>
+            <div class="game-btn" id="btn-fire">FIRE</div>
+        </div>
+        <div id="look-zone"></div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- CONFIG ---
+        const CITY_SIZE = 1000; 
+        const BLOCK_SIZE = 80; 
+        const ROAD_WIDTH = 18; 
+        const GRAVITY = 0.02;
+        const SPEED = 0.4;
+        const JUMP_FORCE = 0.6;
+        const ROCKET_SPEED = 4.0;
+        const BLAST_RADIUS = 18; 
+        const EXPLOSION_FORCE = 1.2;
+        const VOXEL_SIZE = 7; // Slightly larger for performance
+        const MAX_DEBRIS = 300; // Optimization Limit
+        
+        // --- GLOBALS ---
+        let scene, camera, renderer;
+        let playerPos = new THREE.Vector3(0, 2, 200); // Start further back to see Burj
+        let playerVelocityY = 0;
+        let isGrounded = true;
+        let inputState = { forward: false, backward: false };
+        let targetRotationX = 0, targetRotationY = 0;
+        
+        // World Objects
+        let buildings = []; 
+        let activeDebris = []; 
+        let rockets = [];
+        let particles = [];
+        let lights = [];
+
+        // Shake
+        let shakeIntensity = 0;
+        let isShaking = false;
+
+        let buildingTextures = [];
+        let asphaltTexture, rubbleTexture, glassTexture;
+        let minimapCtx;
+        let gunMesh;
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            const minimapCanvas = document.getElementById('minimap');
+            minimapCtx = minimapCanvas.getContext('2d');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x5da6d0); 
+            scene.fog = new THREE.Fog(0x5da6d0, 50, 450);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 800);
+            camera.rotation.order = 'YXZ'; 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const sunLight = new THREE.DirectionalLight(0xffdfba, 1.1);
+            sunLight.position.set(150, 400, 200); 
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.left = -400;
+            sunLight.shadow.camera.right = 400;
+            sunLight.shadow.camera.top = 400;
+            sunLight.shadow.camera.bottom = -400;
+            scene.add(sunLight);
+
+            generateTextures();
+            buildCity();
+            createWeapon();
+            setupControls();
+            animate();
+        }
+
+        // --- WEAPON & EFFECTS ---
+        function createWeapon() {
+            gunMesh = new THREE.Group();
+            const matBody = new THREE.MeshStandardMaterial({color: 0x444444, metalness:0.7, roughness:0.2});
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 1.2), matBody);
+            body.position.set(0.3, -0.4, -0.6);
+            gunMesh.add(body);
+            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8), new THREE.MeshStandardMaterial({color: 0x111111}));
+            barrel.rotation.x = -Math.PI/2;
+            barrel.position.set(0.3, -0.3, -1.0);
+            gunMesh.add(barrel);
+            
+            // Scope
+            const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.5), new THREE.MeshStandardMaterial({color: 0x222222}));
+            scope.rotation.x = -Math.PI/2;
+            scope.position.set(0.3, -0.15, -0.7);
+            gunMesh.add(scope);
+
+            camera.add(gunMesh);
+            scene.add(camera);
+        }
+
+        function fireRocket() {
+            const geo = new THREE.CylinderGeometry(0.08, 0.08, 0.8);
+            geo.rotateX(-Math.PI/2);
+            const mat = new THREE.MeshBasicMaterial({color: 0x222222});
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            mesh.position.copy(camera.position);
+            const offset = new THREE.Vector3(0.3, -0.3, -1.0);
+            offset.applyEuler(camera.rotation);
+            mesh.position.add(offset);
+            mesh.rotation.copy(camera.rotation);
+            
+            const dir = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
+            
+            rockets.push({ mesh: mesh, dir: dir, life: 120 });
+            scene.add(mesh);
+            
+            gunMesh.position.z += 0.35; // Kickback
+        }
+
+        function createExplosion(pos) {
+            shakeIntensity = 1.5;
+            isShaking = true;
+
+            const light = new THREE.PointLight(0xffaa00, 8, 40);
+            light.position.copy(pos);
+            scene.add(light);
+            lights.push({light:light, life: 6});
+
+            const geo = new THREE.SphereGeometry(1, 8, 8);
+            // Flash
+            const flash = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0xffffff, transparent:true}));
+            flash.position.copy(pos);
+            flash.scale.setScalar(4);
+            scene.add(flash);
+            particles.push({mesh:flash, type:'flash', life:5});
+
+            // Fire
+            for(let i=0; i<5; i++) {
+                const f = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0xff5500, transparent:true}));
+                f.position.copy(pos);
+                scene.add(f);
+                particles.push({mesh:f, type:'fire', life:25, scaleSpeed: 0.8});
+            }
+
+            // Smoke
+            for(let i=0; i<12; i++) {
+                const sm = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0x444444, transparent:true, opacity:0.7}));
+                sm.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*4, (Math.random()-0.5)*4, (Math.random()-0.5)*4));
+                scene.add(sm);
+                particles.push({
+                    mesh: sm, type: 'smoke', life: 60 + Math.random()*30,
+                    vel: new THREE.Vector3((Math.random()-0.5)*0.15, 0.15+Math.random()*0.1, (Math.random()-0.5)*0.15),
+                    scaleSpeed: 0.15
+                });
+            }
+        }
+
+        // --- DESTRUCTION LOGIC (OPTIMIZED) ---
+        function damageBuilding(b, impactPoint) {
+            if (!b.voxelized) {
+                voxelizeBuilding(b);
+            }
+
+            const radiusSq = BLAST_RADIUS * BLAST_RADIUS;
+            let destroyedSomething = false;
+
+            // Iterate backwards to safely remove
+            for (let i = b.blocks.length - 1; i >= 0; i--) {
+                const blk = b.blocks[i];
+                const d2 = blk.mesh.position.distanceToSquared(impactPoint);
+                if (d2 < radiusSq) {
+                    activateBlock(b, i, impactPoint);
+                    destroyedSomething = true;
+                }
+            }
+
+            // Only check stability if we actually broke something
+            if(destroyedSomething) {
+                b.needsStabilityCheck = true; 
+            }
+        }
+
+        function checkFloatingBlocks() {
+            // Run this loop every frame, but only processing buildings marked "dirty"
+            for(let b of buildings) {
+                if(!b.voxelized || !b.needsStabilityCheck) continue;
+
+                // Optimization: b.blockSet is maintained in real-time.
+                // We just need to check stability.
+                
+                let collapsedCount = 0;
+                
+                for (let i = b.blocks.length - 1; i >= 0; i--) {
+                    const blk = b.blocks[i];
+                    if(blk.iy === 0) continue; // Ground is stable
+
+                    // Check key below
+                    const keyBelow = `${blk.ix},${blk.iy - 1},${blk.iz}`;
+                    
+                    if(!b.blockSet.has(keyBelow)) {
+                        activateBlock(b, i, null); // Collapse due to gravity
+                        collapsedCount++;
+                    }
+                }
+
+                // If nothing collapsed this pass, building is stable for now
+                if(collapsedCount === 0) {
+                    b.needsStabilityCheck = false;
+                }
+            }
+        }
+
+        function voxelizeBuilding(b) {
+            scene.remove(b.mesh);
+            if(b.roof) scene.remove(b.roof);
+            b.voxelized = true;
+            b.blocks = [];
+            b.blockSet = new Set(); // OPTIMIZATION: Hash Map for O(1) lookup
+            b.needsStabilityCheck = false;
+
+            // Calculate grid dimensions
+            const nx = Math.ceil(b.w / VOXEL_SIZE);
+            const ny = Math.ceil(b.h / VOXEL_SIZE);
+            const nz = Math.ceil(b.d / VOXEL_SIZE);
+            
+            const startX = b.x - (nx*VOXEL_SIZE)/2 + VOXEL_SIZE/2;
+            const startZ = b.z - (nz*VOXEL_SIZE)/2 + VOXEL_SIZE/2;
+            const startY = VOXEL_SIZE/2;
+
+            const geo = new THREE.BoxGeometry(VOXEL_SIZE*0.95, VOXEL_SIZE*0.95, VOXEL_SIZE*0.95);
+            // Use Glass texture for Burj, Concrete for others
+            const mat = b.isBurj ? 
+                new THREE.MeshStandardMaterial({map: glassTexture, color: 0xaaccff, roughness: 0.1, metalness: 0.8}) :
+                new THREE.MeshStandardMaterial({map: rubbleTexture, color: 0x888888});
+
+            for(let y=0; y<ny; y++) {
+                // Burj Taper Logic
+                let currentWidthLimit = 999;
+                if(b.isBurj) {
+                    // Taper tiers
+                    if(y > 35) currentWidthLimit = 2; // Spire
+                    else if(y > 25) currentWidthLimit = 4;
+                    else if(y > 15) currentWidthLimit = 8;
+                }
+
+                for(let x=0; x<nx; x++) {
+                    for(let z=0; z<nz; z++) {
+                        
+                        // Check Burj Shape
+                        if(b.isBurj) {
+                            const dx = Math.abs(x - nx/2);
+                            const dz = Math.abs(z - nz/2);
+                            if(dx > currentWidthLimit || dz > currentWidthLimit) continue;
+                        }
+
+                        const mesh = new THREE.Mesh(geo, mat);
+                        mesh.position.set(
+                            startX + x*VOXEL_SIZE,
+                            startY + y*VOXEL_SIZE,
+                            startZ + z*VOXEL_SIZE
+                        );
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+                        scene.add(mesh);
+
+                        const blk = {
+                            mesh: mesh,
+                            ix: x, iy: y, iz: z,
+                            groundY: VOXEL_SIZE/2
+                        };
+                        b.blocks.push(blk);
+                        b.blockSet.add(`${x},${y},${z}`);
+                    }
+                }
+            }
+        }
+
+        function activateBlock(b, index, impactPoint) {
+            const blk = b.blocks[index];
+            
+            // Remove from data structures
+            b.blocks.splice(index, 1);
+            b.blockSet.delete(`${blk.ix},${blk.iy},${blk.iz}`);
+            b.needsStabilityCheck = true; // Trigger cascading check
+
+            // Calc Velocity
+            let vel;
+            if (impactPoint) {
+                const dir = new THREE.Vector3().subVectors(blk.mesh.position, impactPoint);
+                const dist = dir.length();
+                dir.normalize();
+                const force = (BLAST_RADIUS - dist) / BLAST_RADIUS * EXPLOSION_FORCE;
+                vel = dir.multiplyScalar(force + 0.2);
+                vel.y += 0.5; 
+            } else {
+                // Gravity Fall
+                vel = new THREE.Vector3(
+                    (Math.random()-0.5)*0.2, 
+                    -0.5, 
+                    (Math.random()-0.5)*0.2
+                );
+            }
+
+            // Add to active debris
+            activeDebris.push({
+                mesh: blk.mesh,
+                vel: vel,
+                rot: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(0.3),
+                groundY: blk.groundY,
+                life: 250
+            });
+
+            // OPTIMIZATION: Cap debris count
+            if(activeDebris.length > MAX_DEBRIS) {
+                const old = activeDebris.shift();
+                scene.remove(old.mesh);
+            }
+        }
+
+        // --- CITY GEN ---
+        function generateTextures() {
+            const mkTex = (w, h, drawFn) => {
+                const c = document.createElement('canvas'); c.width = w; c.height = h;
+                drawFn(c.getContext('2d'), w, h);
+                const t = new THREE.CanvasTexture(c);
+                t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+            };
+
+            buildingTextures.push(mkTex(64, 128, (ctx,w,h)=>{
+                ctx.fillStyle='#345'; ctx.fillRect(0,0,w,h);
+                ctx.fillStyle='#678'; for(let y=10;y<h;y+=20) for(let x=5;x<w;x+=20) ctx.fillRect(x,y,10,12);
+            }));
+            
+            glassTexture = mkTex(128, 256, (ctx,w,h)=>{
+                ctx.fillStyle='#2a4a6a'; ctx.fillRect(0,0,w,h); // Blue glass base
+                // Reflection streaks
+                ctx.fillStyle='#4a7a9a'; 
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w, h/2); ctx.lineTo(w,0); ctx.fill();
+                // Grid
+                ctx.strokeStyle = '#1a3a5a'; ctx.lineWidth=2;
+                for(let y=0; y<h; y+=32) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+            });
+
+            asphaltTexture = mkTex(128, 128, (ctx,w,h)=>{
+                ctx.fillStyle='#222'; ctx.fillRect(0,0,w,h);
+                ctx.fillStyle='#333'; for(let i=0;i<200;i++) ctx.fillRect(Math.random()*w,Math.random()*h,2,2);
+            });
+            
+            rubbleTexture = mkTex(64,64, (ctx,w,h)=>{
+                 ctx.fillStyle='#666'; ctx.fillRect(0,0,w,h);
+                 ctx.strokeStyle='#444'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(64,64); ctx.moveTo(64,0); ctx.lineTo(0,64); ctx.stroke();
+            });
+        }
+
+        function buildCity() {
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(CITY_SIZE, CITY_SIZE), new THREE.MeshLambertMaterial({ color: 0x3d6e2e }));
+            ground.rotation.x = -Math.PI/2; ground.receiveShadow = true;
+            scene.add(ground);
+
+            const roadMat = new THREE.MeshStandardMaterial({ map: asphaltTexture, roughness: 0.9 });
+            const geoX = new THREE.PlaneGeometry(CITY_SIZE, ROAD_WIDTH);
+            const geoZ = new THREE.PlaneGeometry(ROAD_WIDTH, CITY_SIZE);
+            
+            for(let i=-CITY_SIZE/2+BLOCK_SIZE; i<CITY_SIZE/2; i+=BLOCK_SIZE) {
+                const rx = new THREE.Mesh(geoX, roadMat); rx.rotation.x=-Math.PI/2; rx.position.set(0, 0.02, i-BLOCK_SIZE/2); scene.add(rx);
+                const rz = new THREE.Mesh(geoZ, roadMat); rz.rotation.x=-Math.PI/2; rz.position.set(i-BLOCK_SIZE/2, 0.02, 0); scene.add(rz);
+            }
+
+            // Create Buildings
+            const half = CITY_SIZE / 2;
+            for (let x = -half + BLOCK_SIZE/2; x < half; x += BLOCK_SIZE) {
+                for (let z = -half + BLOCK_SIZE/2; z < half; z += BLOCK_SIZE) {
+                    
+                    // Center Area reserved for Burj
+                    if (Math.abs(x) < 80 && Math.abs(z) < 80) continue;
+
+                    createBuilding(x, z);
+                }
+            }
+
+            // CREATE BURJ KHALIFA (Center)
+            createBurjKhalifa();
+        }
+
+        function createBurjKhalifa() {
+            const h = 350; // Massive height
+            const w = 60;  // Base width
+            const d = 60;
+
+            const mat = new THREE.MeshStandardMaterial({ 
+                map: glassTexture, 
+                color: 0xffffff,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+
+            // We create a simple visual mesh first (LOD high).
+            // When hit, we will swap it for voxels using the 'isBurj' flag logic.
+            // But to keep logic simple, we use a box that approximates it for the initial visual, 
+            // knowing voxelizeBuilding handles the tapered shape.
+            
+            // Actually, let's just make it a tapering stack of boxes visually to look good before destruction
+            const group = new THREE.Group();
+            const tiers = [
+                {y:0, h:120, s:60},
+                {y:120, h:80, s:40},
+                {y:200, h:80, s:25},
+                {y:280, h:70, s:10}
+            ];
+
+            // Primary Hitbox (Used for logic)
+            const mainMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+            mainMesh.position.set(0, h/2, 0);
+            mainMesh.visible = false; // Invisible physics bounds
+            scene.add(mainMesh);
+
+            // Visual Representation
+            const visualGroup = new THREE.Group();
+            tiers.forEach(t => {
+                const tMesh = new THREE.Mesh(new THREE.BoxGeometry(t.s, t.h, t.s), mat);
+                tMesh.position.y = t.y + t.h/2;
+                tMesh.castShadow = true; tMesh.receiveShadow = true;
+                visualGroup.add(tMesh);
+            });
+            scene.add(visualGroup);
+
+            buildings.push({
+                mesh: visualGroup, // We remove this group
+                hitbox: mainMesh,  // We use this for initial hit calculation
+                x: 0, z: 0, w: w, h: h, d: d,
+                voxelized: false, blocks: [],
+                isBurj: true
+            });
+        }
+
+        function createBuilding(cx, cz) {
+            const h = 40 + Math.random() * 80;
+            const w = 20 + Math.random() * 15;
+            const d = 20 + Math.random() * 15;
+            
+            const tex = buildingTextures[Math.floor(Math.random()*buildingTextures.length)];
+            tex.repeat.set(1, h/30);
+            
+            const mat = new THREE.MeshStandardMaterial({ map: tex });
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+            mesh.position.set(cx, h/2, cz);
+            mesh.castShadow = true; mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(w-0.5, 1, d-0.5), new THREE.MeshLambertMaterial({color:0x222222}));
+            roof.position.set(cx, h+0.5, cz);
+            scene.add(roof);
+
+            buildings.push({
+                mesh: mesh, roof: roof,
+                x: cx, z: cz, w: w, h: h, d: d,
+                voxelized: false, blocks: [],
+                isBurj: false
+            });
+        }
+
+        // --- GAME LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            updatePlayer();
+            updateRockets();
+            updateParticles();
+            checkFloatingBlocks(); 
+            updateDebris();
+            updateCameraShake();
+            updateMinimap();
+            renderer.render(scene, camera);
+        }
+
+        function updateRockets() {
+            if(gunMesh.position.z > -0.6) gunMesh.position.z -= 0.05; 
+
+            for(let i=rockets.length-1; i>=0; i--) {
+                const r = rockets[i];
+                const move = r.dir.clone().multiplyScalar(ROCKET_SPEED);
+                
+                let hitTarget = null;
+                let hitPoint = null;
+
+                // Simple Raycast Check
+                for(let b of buildings) {
+                    if(!b.voxelized) {
+                        // Check against bounds
+                        // If it's the Burj, check the visual group or just AABB
+                         const hw = b.w/2 + 2;
+                         if(Math.abs(r.mesh.position.x - b.x) < hw &&
+                            Math.abs(r.mesh.position.z - b.z) < (b.d/2 + 2) &&
+                            r.mesh.position.y < b.h && r.mesh.position.y > 0) {
+                             hitTarget = b;
+                             hitPoint = r.mesh.position.clone();
+                             break;
+                         }
+                    } else {
+                        // Check against remaining blocks
+                        // Optimization: Check distance to building center first
+                        if(Math.abs(r.mesh.position.x - b.x) < b.w && Math.abs(r.mesh.position.z - b.z) < b.d) {
+                            for(let blk of b.blocks) {
+                                 if(r.mesh.position.distanceToSquared(blk.mesh.position) < 25) { // 5*5
+                                     hitTarget = b;
+                                     hitPoint = blk.mesh.position.clone();
+                                     break;
+                                 }
+                            }
+                        }
+                    }
+                    if(hitTarget) break;
+                }
+                
+                if(!hitTarget && r.mesh.position.y < 0.5) {
+                    hitTarget = 'ground';
+                    hitPoint = r.mesh.position.clone();
+                    hitPoint.y = 0;
+                }
+
+                if(hitTarget) {
+                    createExplosion(hitPoint);
+                    if(hitTarget !== 'ground') {
+                        damageBuilding(hitTarget, hitPoint);
+                    }
+                    scene.remove(r.mesh);
+                    rockets.splice(i, 1);
+                    continue;
+                }
+
+                r.mesh.position.add(move);
+                r.life--;
+                
+                // Smoke trail
+                if(r.life%2===0) {
+                     const p = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.4), new THREE.MeshBasicMaterial({color:0xaaaaaa, transparent:true}));
+                     p.position.copy(r.mesh.position);
+                     scene.add(p);
+                     particles.push({mesh:p, type:'smoke', life:20, scaleSpeed:0.05, vel:new THREE.Vector3(0,0,0)});
+                }
+
+                if(r.life <= 0) {
+                    scene.remove(r.mesh);
+                    rockets.splice(i, 1);
+                }
+            }
+        }
+
+        function updateParticles() {
+            for(let i=lights.length-1; i>=0; i--) {
+                lights[i].life--;
+                if(lights[i].life<=0) { scene.remove(lights[i].light); lights.splice(i,1); }
+            }
+            for(let i=particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                p.life--;
+                if(p.type === 'flash') {
+                    p.mesh.material.opacity = p.life/5;
+                } else if(p.type === 'fire') {
+                    p.mesh.scale.multiplyScalar(1.1);
+                    p.mesh.material.opacity = p.life/25;
+                } else if(p.type === 'smoke') {
+                    p.mesh.position.add(p.vel);
+                    p.mesh.scale.multiplyScalar(1 + p.scaleSpeed);
+                    p.mesh.material.opacity = p.life/80;
+                }
+                if(p.life <= 0) { scene.remove(p.mesh); particles.splice(i,1); }
+            }
+        }
+
+        function updateDebris() {
+            for(let i=activeDebris.length-1; i>=0; i--) {
+                const d = activeDebris[i];
+                d.vel.y -= GRAVITY;
+                d.mesh.position.add(d.vel);
+                d.mesh.rotation.x += d.rot.x;
+                d.mesh.rotation.y += d.rot.y;
+                d.mesh.rotation.z += d.rot.z;
+                
+                if(d.mesh.position.y < d.groundY) {
+                    d.mesh.position.y = d.groundY;
+                    d.vel.y = -d.vel.y * 0.4;
+                    d.vel.x *= 0.85;
+                    d.vel.z *= 0.85;
+                    d.rot.multiplyScalar(0.8);
+                }
+                
+                d.life--;
+                if(d.life <= 0) {
+                    scene.remove(d.mesh);
+                    activeDebris.splice(i,1);
+                }
+            }
+        }
+
+        function updateCameraShake() {
+            if(isShaking) {
+                const s = shakeIntensity * 0.5;
+                camera.position.add(new THREE.Vector3((Math.random()-0.5)*s, (Math.random()-0.5)*s, (Math.random()-0.5)*s));
+                shakeIntensity *= 0.9;
+                if(shakeIntensity < 0.05) isShaking = false;
+            }
+        }
+
+        // --- PLAYER ---
+        function updatePlayer() {
+            camera.rotation.x += (targetRotationX - camera.rotation.x) * 0.3;
+            camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.3;
+
+            let fwd = 0; if(inputState.forward) fwd=1; if(inputState.backward) fwd=-1;
+            const vx = -Math.sin(camera.rotation.y)*fwd*SPEED;
+            const vz = -Math.cos(camera.rotation.y)*fwd*SPEED;
+            
+            let nx = playerPos.x + vx;
+            let nz = playerPos.z + vz;
+            let collide = false;
+            
+            // Collision
+            for(let b of buildings) {
+                if(!b.voxelized) {
+                    if(Math.abs(nx - b.x) < b.w/2+1 && Math.abs(nz - b.z) < b.d/2+1) collide = true;
+                }
+            }
+            
+            if(!collide) { playerPos.x = nx; playerPos.z = nz; }
+            
+            playerVelocityY -= GRAVITY;
+            playerPos.y += playerVelocityY;
+            if(playerPos.y < 2) { playerPos.y = 2; playerVelocityY = 0; isGrounded = true; }
+            
+            camera.position.copy(playerPos);
+        }
+
+        // --- CONTROLS ---
+        function setupControls() {
+            const bindBtn = (id, cb) => {
+                const el = document.getElementById(id);
+                const set = (v,e) => { e.preventDefault(); cb(v); };
+                el.addEventListener('touchstart', e=>set(true,e)); el.addEventListener('touchend', e=>set(false,e));
+                el.addEventListener('mousedown', e=>set(true,e)); el.addEventListener('mouseup', e=>set(false,e));
+            };
+            bindBtn('btn-fwd', v=>inputState.forward=v);
+            bindBtn('btn-back', v=>inputState.backward=v);
+            
+            const doJump = () => { if(isGrounded) { playerVelocityY=JUMP_FORCE; isGrounded=false; } };
+            const jBtn = document.getElementById('btn-jump');
+            jBtn.addEventListener('touchstart', e=>{e.preventDefault();doJump()});
+            jBtn.addEventListener('mousedown', e=>{e.preventDefault();doJump()});
+
+            const doFire = () => fireRocket();
+            const fBtn = document.getElementById('btn-fire');
+            fBtn.addEventListener('touchstart', e=>{e.preventDefault();doFire()});
+            fBtn.addEventListener('mousedown', e=>{e.preventDefault();doFire()});
+
+            let lastX=0, lastY=0, tid=null;
+            const lz = document.getElementById('look-zone');
+            lz.addEventListener('touchstart', e=>{ e.preventDefault(); tid=e.changedTouches[0].identifier; lastX=e.changedTouches[0].clientX; lastY=e.changedTouches[0].clientY; });
+            lz.addEventListener('touchmove', e=>{
+                e.preventDefault();
+                for(let t of e.changedTouches) if(t.identifier===tid) {
+                    targetRotationY -= (t.clientX-lastX)*0.003;
+                    targetRotationX -= (t.clientY-lastY)*0.003;
+                    targetRotationX = Math.max(-1.5, Math.min(1.5, targetRotationX));
+                    lastX=t.clientX; lastY=t.clientY;
+                }
+            });
+
+            window.addEventListener('keydown', e=>{
+                if(e.key.toLowerCase()==='w') inputState.forward=true;
+                if(e.key.toLowerCase()==='s') inputState.backward=true;
+                if(e.key===' ') doJump();
+                if(e.key.toLowerCase()==='f') doFire();
+            });
+            window.addEventListener('keyup', e=>{
+                if(e.key.toLowerCase()==='w') inputState.forward=false;
+                if(e.key.toLowerCase()==='s') inputState.backward=false;
+            });
+
+            document.getElementById('restart-btn').onclick = () => location.reload();
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function updateMinimap() {
+            if(!minimapCtx) return;
+            minimapCtx.clearRect(0,0,140,140);
+            const scale = 140/CITY_SIZE; const off = 70;
+            
+            // Draw City
+            minimapCtx.fillStyle = '#333';
+            for(let b of buildings) {
+                if(!b.voxelized) {
+                    minimapCtx.fillRect((b.x*scale)+off - (b.w*scale)/2, (b.z*scale)+off - (b.d*scale)/2, b.w*scale, b.d*scale);
+                } else {
+                     minimapCtx.fillStyle = '#666';
+                     // Sample optimization for minimap of voxels
+                     if(b.blocks.length > 0) {
+                         const bScaleW = b.w*scale;
+                         const bScaleH = b.d*scale;
+                         minimapCtx.fillRect((b.x*scale)+off - bScaleW/2, (b.z*scale)+off - bScaleH/2, bScaleW, bScaleH);
+                     }
+                }
+            }
+            // Draw Player
+            const px = playerPos.x*scale+off; const pz = playerPos.z*scale+off;
+            minimapCtx.save(); minimapCtx.translate(px,pz); minimapCtx.rotate(-camera.rotation.y);
+            minimapCtx.fillStyle='#00FF00'; minimapCtx.beginPath(); minimapCtx.moveTo(0,-5); minimapCtx.lineTo(4,4); minimapCtx.lineTo(-4,4); minimapCtx.fill();
+            minimapCtx.restore();
+        }
+
+        init();
+    </script>
+</body>
+</html>

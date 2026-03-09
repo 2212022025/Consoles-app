@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>3D Plains - Earth to Moon</title>
+    <style>
+        /* CORE STYLES */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000; 
+            font-family: 'Segoe UI', sans-serif; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: none;
+        }
+
+        /* LANDSCAPE WARNING */
+        @media screen and (orientation: portrait) {
+            #rotate-msg { display: flex; }
+        }
+        @media screen and (orientation: landscape) {
+            #rotate-msg { display: none; }
+        }
+        #rotate-msg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; color: white; z-index: 3000;
+            display: none; align-items: center; justify-content: center;
+            font-size: 20px; text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        
+        /* UI LAYER */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        /* CROSSHAIR */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            background: white; border-radius: 50%;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            transform: translate(-50%, -50%); pointer-events: none;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            display: none; 
+        }
+
+        /* MINIMAP */
+        #minimap {
+            position: absolute; top: 15px; right: 15px;
+            width: 120px; height: 120px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px; z-index: 20;
+            pointer-events: none; display: none; 
+        }
+
+        /* CONTROLS */
+        .control-group {
+            position: absolute; bottom: 30px; pointer-events: auto;
+            display: flex; gap: 15px; display: none; 
+        }
+        #left-controls { left: 40px; flex-direction: column; align-items: center; }
+        #right-controls { right: 40px; align-items: flex-end; }
+        .game-btn {
+            width: 70px; height: 70px;
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+            color: white; font-size: 24px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: background 0.1s, transform 0.1s;
+            outline: none; -webkit-tap-highlight-color: transparent;
+        }
+        .game-btn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.95); }
+        #btn-jump { width: 80px; height: 80px; background: rgba(255, 200, 100, 0.2); border-color: rgba(255, 200, 100, 0.4); font-size: 16px; }
+        
+        #look-zone { position: absolute; top: 0; right: 0; width: 60%; height: 100%; pointer-events: auto; z-index: 1; }
+        .control-group { z-index: 10; }
+
+        /* HUD */
+        #hud-top {
+            position: absolute; top: 10px; left: 10px;
+            display: flex; flex-direction: column; gap: 5px;
+            pointer-events: none; display: none; color: white; text-shadow: 1px 1px 2px black; font-weight: bold;
+        }
+        
+        /* MENUS & SCREENS */
+        .screen-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            pointer-events: auto; color: white;
+        }
+
+        .menu-btn {
+            padding: 15px 40px; font-size: 24px;
+            color: white; border: 2px solid #fff;
+            border-radius: 10px; cursor: pointer;
+            text-transform: uppercase; margin: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            background: #333; width: 250px; text-align: center;
+        }
+        .menu-btn:active { transform: scale(0.95); }
+        #end-game-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 2001;
+            display: none; pointer-events: auto; flex-direction: column; gap: 10px;
+        }
+
+        /* --- ROCKET UI --- */
+        #rocket-enter-btn {
+            position: absolute; bottom: 120px; left: 50%;
+            transform: translateX(-50%);
+            /* MODIFIED: SMALLER TEXT AND BUTTON */
+            padding: 10px 25px; 
+            background: rgba(0, 150, 255, 0.9);
+            border: 2px solid white; border-radius: 20px;
+            color: white; font-weight: 800; font-size: 14px;
+            pointer-events: auto; display: none; cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 150, 255, 0.8);
+            z-index: 100;
+            text-transform: uppercase;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
+
+        #rocket-launch-btn {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            /* MODIFIED: VERY SMALL LAUNCH BUTTON */
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #ff3333, #aa0000);
+            border: 3px solid white; border-radius: 50%;
+            color: white; font-weight: bold; font-size: 10px;
+            display: none; align-items: center; justify-content: center;
+            pointer-events: auto; cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
+            z-index: 100; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { transform: translate(-50%,-50%) scale(1); box-shadow: 0 0 10px rgba(255,0,0,0.5); } 50% { transform: translate(-50%,-50%) scale(1.1); box-shadow: 0 0 25px rgba(255,0,0,0.9); } 100% { transform: translate(-50%,-50%) scale(1); box-shadow: 0 0 10px rgba(255,0,0,0.5); } }
+        
+        #rocket-exit-btn {
+            position: absolute; top: 20px; left: 20px;
+            width: 60px; height: 60px;
+            background: rgba(255, 50, 50, 0.6);
+            border: 2px solid white; border-radius: 12px;
+            color: white; font-size: 30px; font-weight: bold;
+            display: none; align-items: center; justify-content: center;
+            pointer-events: auto; cursor: pointer; z-index: 100;
+        }
+        
+        #space-msg {
+            position: absolute; top: 20%; width: 100%; text-align: center;
+            font-size: 24px; color: white; font-weight: bold;
+            text-shadow: 0 0 10px blue; display: none; pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="rotate-msg">Please Rotate Device to Landscape</div>
+
+    <!-- GAME UI -->
+    <div id="canvas-container"></div>
+    <canvas id="minimap" width="120" height="120"></canvas>
+
+    <div id="ui-layer">
+        <div id="hud-top">
+            <span id="alt-meter">ALTITUDE: 0</span>
+        </div>
+        <div id="space-msg"></div>
+        
+        <div id="end-game-ui">
+            <div id="restart-btn" class="menu-btn">RETRY</div>
+        </div>
+        
+        <div id="crosshair"></div>
+        
+        <!-- ROCKET BUTTONS -->
+        <div id="rocket-enter-btn">ENTER ROCKET</div>
+        <div id="rocket-launch-btn">LAUNCH</div>
+        <div id="rocket-exit-btn">✕</div>
+
+        <div id="left-controls" class="control-group">
+            <div class="game-btn" id="btn-fwd">▲</div>
+            <div class="game-btn" id="btn-back">▼</div>
+        </div>
+        <div id="right-controls" class="control-group">
+            <div class="game-btn" id="btn-jump">JUMP</div>
+        </div>
+        <div id="look-zone"></div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- MAIN GAME SCRIPT -->
+    <script>
+        // --- GAME SETTINGS ---
+        const MAP_SIZE = 400; 
+        const BOUNDARY_LIMIT = MAP_SIZE / 2 - 5; 
+        const TREE_COUNT = 600; 
+        const SPEED = 0.15; 
+        const SENSITIVITY = 0.0025;
+        const PLAYER_HEIGHT = 1.7;
+        const GRAVITY = 0.02;
+        const JUMP_FORCE = 0.5;
+        const GRASS_COUNT = 1500;
+        const CLIMB_MT_X = 80;
+        const CLIMB_MT_Z = -80;
+        const CLIMB_MT_RADIUS = 60;
+        const CLIMB_MT_HEIGHT = 25;
+
+        // --- GLOBALS ---
+        let scene, camera, renderer;
+        let playerPos = new THREE.Vector3(0, PLAYER_HEIGHT, 0);
+        let playerVelocityY = 0;
+        let isGrounded = true;
+        let gameState = 'START'; // START, GROUND, ROCKET_PRE, ROCKET_FLY, MOON_WALK
+        let currentPlanet = 'EARTH'; // EARTH or MOON
+        let gameSeed = 1;
+
+        // ROCKET VARS
+        let rocketGroup, rocketStand;
+        let rocketPos = new THREE.Vector3(-50, 0, -50);
+        // Added orbitAngleVertical for 3D camera
+        let rocketMode = { active: false, launching: false, orbitAngle: 0, orbitAngleVertical: Math.PI/2, speed: 0, flightTime: 0 };
+        const ROCKET_AUDIO_URL = "https://files.catbox.moe/hkowv0.mp3";
+        let rocketAudio = new Audio(ROCKET_AUDIO_URL);
+        rocketAudio.loop = true;
+        let particles = [];
+
+        // SPACE VARS
+        let earthMesh, moonMesh, starField, moonGround, sunLight;
+        let earthGroup, moonEnvironment;
+
+        // Objects
+        let gunMesh;
+        let obstacles = [];
+        let worldMeshes = []; // Earth objects
+        let moonObstacles = []; // Moon objects
+        
+        // Input
+        let targetRotationX = 0, targetRotationY = 0;
+        let inputState = { forward: false, backward: false };
+        let minimapCtx;
+
+        // --- SEEDED RNG ---
+        function setGameSeed(s) { gameSeed = s % 233280; if(gameSeed <= 0) gameSeed += 233280; }
+        function gameRandom() {
+            gameSeed = (gameSeed * 9301 + 49297) % 233280;
+            return gameSeed / 233280;
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            const container = document.getElementById('canvas-container');
+            const minimapCanvas = document.getElementById('minimap');
+            minimapCtx = minimapCanvas.getContext('2d');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); 
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 300);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 5000); // Increased Far clip
+            camera.rotation.order = 'YXZ'; 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            sunLight = new THREE.DirectionalLight(0xffdfba, 1.0);
+            sunLight.position.set(0, 200, 0); 
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 500;
+            sunLight.shadow.camera.left = -150;
+            sunLight.shadow.camera.right = 150;
+            sunLight.shadow.camera.top = 150;
+            sunLight.shadow.camera.bottom = -150;
+            scene.add(sunLight);
+            
+            // EARTH GROUND
+            earthGroup = new THREE.Group();
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE), new THREE.MeshStandardMaterial({ color: 0x4C9A2A, roughness: 1 }));
+            ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+            earthGroup.add(ground);
+            
+            const border = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE)), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 }));
+            border.rotation.x = -Math.PI / 2; border.position.y = 0.1;
+            earthGroup.add(border);
+            scene.add(earthGroup);
+
+            setupControls();
+            setupUIListeners();
+            setupRocketListeners();
+            createSpaceAssets(); // Preload space stuff
+            createMoonTerrain(); // Preload Moon
+            
+            // DIRECT START
+            startGame();
+            animate();
+        }
+
+        function createSpaceAssets() {
+            // Stars
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 2000;
+            const posArray = new Float32Array(starCount * 3);
+            for(let i=0; i<starCount*3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 2000; // Wider stars
+            }
+            starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            starField = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xFFFFFF, size: 2}));
+            starField.visible = false;
+            scene.add(starField);
+
+            // Earth Planet Mesh (seen from space)
+            const earthGeo = new THREE.SphereGeometry(100, 32, 32);
+            const earthMat = new THREE.MeshStandardMaterial({
+                color: 0x2233ff, 
+                roughness: 0.8,
+                emissive: 0x001133
+            });
+            earthMesh = new THREE.Mesh(earthGeo, earthMat);
+            // Add clouds
+            const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(102, 32, 32), new THREE.MeshBasicMaterial({color: 0xFFFFFF, transparent: true, opacity: 0.3}));
+            earthMesh.add(cloudMesh);
+            earthMesh.visible = false;
+            scene.add(earthMesh);
+
+            // Moon Planet Mesh (seen from space)
+            const moonGeo = new THREE.SphereGeometry(60, 32, 32);
+            const moonMat = new THREE.MeshStandardMaterial({color: 0xaaaaaa, roughness: 0.9});
+            moonMesh = new THREE.Mesh(moonGeo, moonMat);
+            moonMesh.visible = false;
+            scene.add(moonMesh);
+        }
+
+        function createMoonTerrain() {
+            moonEnvironment = new THREE.Group();
+            
+            // Dark Ground
+            const mGround = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE), new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 }));
+            mGround.rotation.x = -Math.PI / 2; 
+            mGround.receiveShadow = true;
+            moonEnvironment.add(mGround);
+
+            // Craters
+            for(let i=0; i<50; i++) {
+                const r = 2 + Math.random() * 8;
+                const x = (Math.random()-0.5)*MAP_SIZE;
+                const z = (Math.random()-0.5)*MAP_SIZE;
+                
+                // Clear landing zone
+                if(Math.hypot(x, z) < 30) continue;
+
+                const crater = new THREE.Mesh(new THREE.TorusGeometry(r, 1, 8, 16), new THREE.MeshStandardMaterial({color: 0x444444}));
+                crater.rotation.x = Math.PI/2;
+                crater.scale.z = 0.5; // Flatten
+                crater.position.set(x, 0.5, z);
+                moonEnvironment.add(crater);
+                moonObstacles.push({x:x, z:z, r:r});
+            }
+
+            moonEnvironment.visible = false;
+            scene.add(moonEnvironment);
+        }
+
+        function clearWorld() {
+            worldMeshes.forEach(m => earthGroup.remove(m));
+            worldMeshes = [];
+            obstacles = [];
+            moonObstacles = [];
+            if(rocketGroup) scene.remove(rocketGroup);
+            if(rocketStand) scene.remove(rocketStand);
+            particles = [];
+            
+            // Reset Environ vars
+            currentPlanet = 'EARTH';
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 300);
+            earthGroup.visible = true;
+            moonEnvironment.visible = false;
+            starField.visible = false;
+            earthMesh.visible = false;
+            moonMesh.visible = false;
+        }
+
+        // --- UI & GAME LOGIC ---
+
+        function setupUIListeners() {
+            document.getElementById('restart-btn').onclick = () => {
+                location.reload(); 
+            };
+        }
+        
+        function setupRocketListeners() {
+            // Enter Button
+            document.getElementById('rocket-enter-btn').onclick = () => {
+                enterRocketMode();
+            };
+            
+            // Exit Button
+            document.getElementById('rocket-exit-btn').onclick = () => {
+                exitRocketMode();
+            };
+
+            // Launch Button
+            document.getElementById('rocket-launch-btn').onclick = () => {
+                if(!rocketMode.launching) {
+                    rocketMode.launching = true;
+                    rocketMode.flightTime = 0;
+                    document.getElementById('rocket-launch-btn').style.display = 'none';
+                    document.getElementById('rocket-exit-btn').style.display = 'none'; // Lock in
+                    try { rocketAudio.currentTime = 0; rocketAudio.play(); } catch(e){}
+                }
+            };
+        }
+
+        function startGame() {
+            // UI SETUP
+            document.getElementById('hud-top').style.display = 'flex';
+            document.getElementById('minimap').style.display = 'block';
+            document.getElementById('btn-jump').style.display = 'flex';
+            document.getElementById('right-controls').style.display = 'flex';
+            document.getElementById('left-controls').style.display = 'flex';
+            document.getElementById('crosshair').style.display = 'block';
+
+            // GENERATE WORLD
+            clearWorld();
+            setGameSeed(Math.random() * 10000);
+            createGrass();
+            createClimbableMountain(); 
+            generateNature();
+            createHouse();
+            createPonds();
+            createClouds(); 
+            createMountain(); 
+            createGun();
+            createStylishRocket(); 
+
+            gunMesh.visible = true;
+
+            // SPAWN PLAYER ON GROUND
+            gameState = 'GROUND';
+            const startX = 0; 
+            const startZ = 0;
+            playerPos.set(startX, getGroundLevel(startX, startZ) + PLAYER_HEIGHT, startZ);
+            
+            targetRotationY = 0; targetRotationX = 0;
+        }
+
+        // --- UPDATE LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if(gameState === 'GROUND' || gameState === 'MOON_WALK') {
+                updatePhysics();
+                checkRocketInteraction();
+                document.getElementById('alt-meter').innerText = "ALTITUDE: " + Math.floor(playerPos.y);
+            } else if(gameState === 'ROCKET_PRE' || gameState === 'ROCKET_FLY') {
+                updateRocketMode();
+            }
+
+            if(gameState !== 'START') updateMinimap();
+            renderer.render(scene, camera);
+        }
+
+        function updatePhysics() {
+            movePlayer(false);
+            camera.position.copy(playerPos);
+        }
+
+        // --- ROCKET CREATION & LOGIC ---
+
+        function createStylishRocket() {
+            // 1. THE STAND
+            rocketStand = new THREE.Group();
+            rocketStand.position.copy(rocketPos);
+            
+            // Platform
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(6, 7, 2, 8), new THREE.MeshStandardMaterial({color: 0x555555, roughness: 0.8}));
+            base.position.y = 1; base.receiveShadow = true;
+            rocketStand.add(base);
+            
+            // Tower/Gantry
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(2, 14, 2), new THREE.MeshStandardMaterial({color: 0x888888}));
+            tower.position.set(-5, 7, 0); tower.castShadow = true;
+            rocketStand.add(tower);
+            const bridge = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 1.5), new THREE.MeshStandardMaterial({color: 0x333333}));
+            bridge.position.set(-2, 10, 0); 
+            rocketStand.add(bridge);
+
+            scene.add(rocketStand);
+            obstacles.push({x: rocketPos.x, z: rocketPos.z, r: 6}); 
+
+            // 2. THE ROCKET
+            rocketGroup = new THREE.Group();
+            rocketGroup.position.set(rocketPos.x, 3, rocketPos.z);
+            
+            // Body
+            const bodyGeo = new THREE.CylinderGeometry(2, 2, 12, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({color: 0xEEEEEE, metalness: 0.3, roughness: 0.2});
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 6; body.castShadow = true;
+            rocketGroup.add(body);
+
+            // Nose Cone
+            const noseGeo = new THREE.ConeGeometry(2, 4, 16);
+            const noseMat = new THREE.MeshStandardMaterial({color: 0xCC0000});
+            const nose = new THREE.Mesh(noseGeo, noseMat);
+            nose.position.y = 14; 
+            rocketGroup.add(nose);
+
+            // Fins
+            const finGeo = new THREE.BoxGeometry(1.5, 4, 0.2);
+            const finMat = new THREE.MeshStandardMaterial({color: 0xCC0000});
+            for(let i=0; i<4; i++) {
+                const fin = new THREE.Mesh(finGeo, finMat);
+                fin.position.y = 2;
+                fin.position.x = Math.cos(i*Math.PI/2) * 2.2;
+                fin.position.z = Math.sin(i*Math.PI/2) * 2.2;
+                fin.rotation.y = -i*Math.PI/2;
+                rocketGroup.add(fin);
+            }
+
+            // Window
+            const winGeo = new THREE.SphereGeometry(0.8, 16, 16);
+            const winMat = new THREE.MeshStandardMaterial({color: 0x00aaff, emissive: 0x002244});
+            const win = new THREE.Mesh(winGeo, winMat);
+            win.position.set(0, 9, 1.6);
+            win.scale.z = 0.5;
+            rocketGroup.add(win);
+            
+            // Engines
+            const engineGeo = new THREE.CylinderGeometry(0.5, 0.8, 1, 8);
+            const engineMat = new THREE.MeshStandardMaterial({color: 0x222222});
+            for(let i=0; i<4; i++) {
+                const eng = new THREE.Mesh(engineGeo, engineMat);
+                eng.position.y = -0.5;
+                eng.position.x = Math.cos(i*Math.PI/2 + Math.PI/4) * 1.2;
+                eng.position.z = Math.sin(i*Math.PI/2 + Math.PI/4) * 1.2;
+                rocketGroup.add(eng);
+            }
+
+            scene.add(rocketGroup);
+        }
+
+        function checkRocketInteraction() {
+            // Only on Earth
+            if(currentPlanet !== 'EARTH') {
+                return;
+            }
+
+            const dist = new THREE.Vector3(playerPos.x, 0, playerPos.z).distanceTo(new THREE.Vector3(rocketPos.x, 0, rocketPos.z));
+            const btn = document.getElementById('rocket-enter-btn');
+            
+            if(dist < 12 && !rocketMode.active && !rocketMode.launching) {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function enterRocketMode() {
+            gameState = 'ROCKET_PRE';
+            document.getElementById('rocket-enter-btn').style.display = 'none';
+            
+            // Hide Ground UI
+            document.getElementById('left-controls').style.display = 'none';
+            document.getElementById('right-controls').style.display = 'none';
+            document.getElementById('crosshair').style.display = 'none';
+            document.getElementById('btn-jump').style.display = 'none';
+
+            // Show Rocket UI
+            document.getElementById('rocket-launch-btn').style.display = 'flex';
+            if(!rocketMode.launching) document.getElementById('rocket-exit-btn').style.display = 'flex';
+
+            rocketMode.active = true;
+            // Reset Camera Angle
+            rocketMode.orbitAngleVertical = Math.PI/2;
+            gunMesh.visible = false;
+        }
+
+        function exitRocketMode() {
+            if(currentPlanet === 'EARTH') {
+                gameState = 'GROUND';
+                playerPos.set(rocketPos.x + 10, rocketPos.y + 2, rocketPos.z + 10);
+            } else {
+                gameState = 'MOON_WALK';
+                playerPos.set(10, 5, 10); // Exit on moon
+            }
+            
+            rocketMode.active = false;
+
+            // Show Ground UI
+            document.getElementById('left-controls').style.display = 'flex';
+            document.getElementById('right-controls').style.display = 'flex';
+            document.getElementById('crosshair').style.display = 'block';
+            document.getElementById('btn-jump').style.display = 'flex';
+
+            // Hide Rocket UI
+            document.getElementById('rocket-launch-btn').style.display = 'none';
+            document.getElementById('rocket-exit-btn').style.display = 'none';
+            document.getElementById('space-msg').style.display = 'none';
+
+            gunMesh.visible = true;
+            targetRotationX = 0;
+            camera.rotation.set(0, targetRotationY, 0); 
+        }
+
+        function updateRocketMode() {
+            gameState = 'ROCKET_FLY';
+            
+            // Camera Orbit - FULL 360 Logic
+            const orbitRadius = 35;
+            
+            // Convert spherical to cartesian
+            // Theta = Horizontal, Phi = Vertical
+            const theta = rocketMode.orbitAngle;
+            const phi = rocketMode.orbitAngleVertical;
+            
+            // Standard Spherical conversion
+            const camX = rocketGroup.position.x + orbitRadius * Math.sin(phi) * Math.sin(theta);
+            const camY = rocketGroup.position.y + orbitRadius * Math.cos(phi);
+            const camZ = rocketGroup.position.z + orbitRadius * Math.sin(phi) * Math.cos(theta);
+
+            camera.position.set(camX, camY, camZ);
+            camera.lookAt(rocketGroup.position.x, rocketGroup.position.y + 5, rocketGroup.position.z);
+
+            if(rocketMode.launching) {
+                rocketMode.flightTime += 1/60; // Approx seconds
+                const t = rocketMode.flightTime;
+                
+                // --- TIMELINE LOGIC ---
+                
+                // 1. LIFTOFF (0-30s)
+                if(t < 30) {
+                    rocketMode.speed += 0.005;
+                    rocketGroup.position.y += rocketMode.speed;
+                    spawnFireParticles();
+                    
+                    // Fade Sky to Black
+                    const color = new THREE.Color(0x87CEEB);
+                    color.lerp(new THREE.Color(0x000000), Math.min(1, t/15));
+                    scene.background = color;
+                    scene.fog.color = color;
+                    
+                    if(t > 15) { 
+                        starField.visible = true; 
+                        scene.fog.near = 500; scene.fog.far = 2000; // Open fog
+                    }
+                    document.getElementById('alt-meter').innerText = "ALTITUDE: " + Math.floor(rocketGroup.position.y);
+                }
+                
+                // 2. SPACE - SEE EARTH (30s)
+                else if (t >= 30 && t < 50) {
+                    if(!earthMesh.visible) {
+                        earthMesh.visible = true;
+                        earthGroup.visible = false; // Hide ground terrain
+                        showMsg("ENTERED SPACE - EARTH VIEW");
+                    }
+                    rocketGroup.position.y += 0.5; // Constant cruise
+                    spawnFireParticles();
+                    
+                    // Position Earth below rocket
+                    earthMesh.position.set(rocketGroup.position.x, rocketGroup.position.y - 150, rocketGroup.position.z);
+                    earthMesh.rotation.y += 0.001;
+                }
+                
+                // 3. APPROACH MOON (50s)
+                else if (t >= 50 && t < 65) {
+                    if(!moonMesh.visible) {
+                        earthMesh.visible = false; // Leave Earth behind
+                        moonMesh.visible = true;
+                        showMsg("APPROACHING MOON");
+                    }
+                    rocketGroup.position.y += 0.5;
+                    spawnFireParticles();
+                    
+                    // Moon approaching from above
+                    moonMesh.position.set(rocketGroup.position.x, rocketGroup.position.y + 100 - (t-50)*6, rocketGroup.position.z);
+                }
+                
+                // 4. LANDING (65s)
+                else if (t >= 65) {
+                    performLanding();
+                }
+
+                updateParticles();
+            }
+        }
+        
+        function showMsg(txt) {
+            const el = document.getElementById('space-msg');
+            el.innerText = txt;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        function performLanding() {
+            rocketMode.launching = false;
+            rocketAudio.pause();
+            particles = []; // Clear fire
+
+            // SWITCH ENVIRONMENT
+            currentPlanet = 'MOON';
+            scene.background = new THREE.Color(0x000000); // Pure black
+            earthGroup.visible = false;
+            moonMesh.visible = false; // Hide the distant moon sphere
+            moonEnvironment.visible = true; // Show the terrain
+            starField.visible = true;
+            
+            // MODIFIED: Earth visible from Moon Surface
+            earthMesh.visible = true;
+            earthMesh.scale.setScalar(3); // Make Earth Big
+            earthMesh.position.set(0, 400, -800); // High in the sky, far away
+            
+            // Position Rocket on Moon Ground
+            rocketGroup.position.set(0, 0, 0); 
+            rocketStand.position.set(0, -500, 0); // Hide stand
+            
+            // Adjust Lighting for Moon (Darker, Starker)
+            sunLight.intensity = 0.5;
+            
+            showMsg("TOUCHDOWN - MOON SURFACE");
+            document.getElementById('rocket-exit-btn').style.display = 'flex';
+        }
+
+        function spawnFireParticles() {
+            for(let i=0; i<5; i++) {
+                const p = new THREE.Mesh(new THREE.DodecahedronGeometry(0.5 + Math.random()*0.5), new THREE.MeshBasicMaterial({color: 0xFFaa00, transparent:true, opacity:1}));
+                const offsetX = (Math.random()-0.5) * 2;
+                const offsetZ = (Math.random()-0.5) * 2;
+                p.position.set(rocketGroup.position.x + offsetX, rocketGroup.position.y - 1, rocketGroup.position.z + offsetZ);
+                scene.add(p);
+                particles.push({mesh: p, life: 1.0, vel: new THREE.Vector3((Math.random()-0.5)*0.2, -0.5 - Math.random()*0.5, (Math.random()-0.5)*0.2)});
+            }
+        }
+
+        function updateParticles() {
+            for(let i = particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                p.life -= 0.03;
+                p.mesh.position.add(p.vel);
+                p.mesh.scale.setScalar(p.life);
+                p.mesh.rotation.x += 0.1;
+                p.mesh.material.opacity = p.life;
+                p.mesh.material.color.setHSL(0.1 * p.life, 1, 0.5); 
+                if(p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // --- STANDARD MOVEMENT LOGIC ---
+        
+        function movePlayer(inAir) {
+            camera.rotation.x += (targetRotationX - camera.rotation.x)*0.2;
+            camera.rotation.y += (targetRotationY - camera.rotation.y)*0.2;
+            
+            let fwd = 0;
+            if(inputState.forward) fwd = 1; if(inputState.backward) fwd = -1;
+            
+            const spd = SPEED;
+            const nx = playerPos.x - Math.sin(camera.rotation.y)*fwd*spd;
+            const nz = playerPos.z - Math.cos(camera.rotation.y)*fwd*spd;
+            
+            // Collision logic depending on planet
+            if(currentPlanet === 'EARTH') {
+                if(isPositionValid(nx, nz)) { playerPos.x = nx; playerPos.z = nz; }
+            } else {
+                 if(isPositionValidMoon(nx, nz)) { playerPos.x = nx; playerPos.z = nz; }
+            }
+            
+            playerVelocityY -= GRAVITY;
+            playerPos.y += playerVelocityY;
+            
+            // Ground logic
+            let gh = 0;
+            if(currentPlanet === 'EARTH') gh = getGroundLevel(playerPos.x, playerPos.z);
+            else gh = 0; // Flat moon for now (plus craters)
+
+            if(playerPos.y <= gh + PLAYER_HEIGHT) {
+                playerPos.y = gh + PLAYER_HEIGHT;
+                playerVelocityY = 0;
+                isGrounded = true;
+            }
+            
+            playerPos.x = Math.max(-BOUNDARY_LIMIT, Math.min(BOUNDARY_LIMIT, playerPos.x));
+            playerPos.z = Math.max(-BOUNDARY_LIMIT, Math.min(BOUNDARY_LIMIT, playerPos.z));
+        }
+
+        function createGrass() {
+            const geo = new THREE.PlaneGeometry(0.5,0.8); geo.translate(0,0.4,0);
+            const mat = new THREE.MeshLambertMaterial({color:0x5da130, side:2, transparent:true});
+            const mesh = new THREE.InstancedMesh(geo, mat, GRASS_COUNT);
+            const d = new THREE.Object3D();
+            for(let i=0; i<GRASS_COUNT; i++) {
+                const a=gameRandom()*6.28, dist=12+gameRandom()*8;
+                const side = gameRandom()>0.5?1:-1;
+                d.position.set(side*30 + Math.cos(a)*dist, 0, side*30+Math.sin(a)*dist);
+                d.rotation.y=gameRandom()*3; d.scale.setScalar(0.8+gameRandom()*0.4);
+                d.updateMatrix(); mesh.setMatrixAt(i, d.matrix);
+            }
+            earthGroup.add(mesh); // Add to earthGroup
+            worldMeshes.push(mesh);
+        }
+
+        function getGroundLevel(x, z) {
+            const d = Math.hypot(x-CLIMB_MT_X, z-CLIMB_MT_Z);
+            return d < CLIMB_MT_RADIUS ? CLIMB_MT_HEIGHT*(1-d/CLIMB_MT_RADIUS) : 0;
+        }
+        function isPositionValid(x, z) {
+            // Rocket stand obstruction
+            if(Math.hypot(x-rocketPos.x, z-rocketPos.z) < 6) return false;
+            
+            if(x>13 && x<27 && z>-27 && z<-13) return false;
+            for(let o of obstacles) if(Math.hypot(x-o.x, z-o.z) < o.r) return false;
+            return true;
+        }
+        
+        function isPositionValidMoon(x, z) {
+            // Rocket obstruction
+            if(Math.hypot(x, z) < 4) return false;
+            for(let o of moonObstacles) if(Math.hypot(x-o.x, z-o.z) < o.r) return false;
+            return true;
+        }
+
+        function createGun() {
+            gunMesh = new THREE.Group();
+            gunMesh.add(new THREE.Mesh(new THREE.BoxGeometry(0.1,0.1,0.6), new THREE.MeshStandardMaterial({color:0x222222})).translateX(0.2).translateY(-0.2).translateZ(-0.4));
+            gunMesh.visible=false; camera.add(gunMesh);
+        }
+
+        function createClimbableMountain() {
+            const m = new THREE.Mesh(new THREE.ConeGeometry(CLIMB_MT_RADIUS,CLIMB_MT_HEIGHT,32), new THREE.MeshStandardMaterial({color:0x5da130,roughness:1}));
+            m.position.set(CLIMB_MT_X, CLIMB_MT_HEIGHT/2, CLIMB_MT_Z); m.receiveShadow=true; 
+            earthGroup.add(m);
+        }
+
+        function generateNature() {
+             const tG = new THREE.CylinderGeometry(0.3,0.5,2,5), tM = new THREE.MeshStandardMaterial({color:0x3d2817});
+             const lG = new THREE.ConeGeometry(2,5,5), lM = new THREE.MeshStandardMaterial({color:0x2d5a27});
+             const oakTrunk = new THREE.CylinderGeometry(0.8, 1.0, 3, 7);
+             const oakLeaves = new THREE.DodecahedronGeometry(3.5);
+             const oakMat = new THREE.MeshStandardMaterial({color:0x4d7a27});
+             const spruceTrunk = new THREE.CylinderGeometry(0.4, 0.6, 4, 6);
+             const spruceLeaves = new THREE.ConeGeometry(2.5, 8, 6);
+             const spruceMat = new THREE.MeshStandardMaterial({color:0x1e3f1b});
+
+             for(let i=0; i<TREE_COUNT; i++) {
+                 const x=(gameRandom()-0.5)*MAP_SIZE, z=(gameRandom()-0.5)*MAP_SIZE;
+                 // Avoid Rocket area (-50, -50)
+                 if(Math.hypot(x,z)<10 || Math.hypot(x-CLIMB_MT_X,z-CLIMB_MT_Z)<CLIMB_MT_RADIUS || Math.hypot(x - -50, z - -50) < 15) continue;
+                 
+                 const rand = gameRandom();
+                 const g=new THREE.Group(); g.position.set(x,0,z);
+                 let radius = 1.0;
+
+                 if(rand < 0.6) {
+                     const t=new THREE.Mesh(tG,tM); t.position.y=1; t.castShadow=true; g.add(t);
+                     const l=new THREE.Mesh(lG,lM); l.position.y=3.5; l.castShadow=true; g.add(l);
+                     g.scale.setScalar(0.8+gameRandom()*0.6);
+                     radius = 1.2;
+                 } else if (rand < 0.8) {
+                     const t=new THREE.Mesh(oakTrunk,tM); t.position.y=1.5; t.castShadow=true; g.add(t);
+                     const l=new THREE.Mesh(oakLeaves,oakMat); l.position.y=4.5; l.castShadow=true; g.add(l);
+                     g.scale.setScalar(1.2+gameRandom()*0.5);
+                     radius = 2.0;
+                 } else {
+                     const t=new THREE.Mesh(spruceTrunk,tM); t.position.y=2; t.castShadow=true; g.add(t);
+                     const l=new THREE.Mesh(spruceLeaves,spruceMat); l.position.y=6; l.castShadow=true; g.add(l);
+                     g.scale.setScalar(1.0+gameRandom()*0.8);
+                     radius = 1.5;
+                 }
+
+                 earthGroup.add(g);
+                 worldMeshes.push(g);
+                 obstacles.push({x:x,z:z,r:radius});
+             }
+        }
+        function createHouse() {
+            const h = new THREE.Group(); h.position.set(20,0,-20);
+            const w = new THREE.Mesh(new THREE.BoxGeometry(12,6,12), new THREE.MeshStandardMaterial({color:0xD2B48C})); w.position.y=3; w.castShadow=true; h.add(w);
+            const r = new THREE.Mesh(new THREE.ConeGeometry(10,5,4), new THREE.MeshStandardMaterial({color:0x8B0000})); r.position.y=8.5; r.rotateY(0.78); h.add(r);
+            earthGroup.add(h);
+        }
+        function createPonds() {
+            const p = new THREE.Mesh(new THREE.CircleGeometry(12,32), new THREE.MeshStandardMaterial({color:0x0077be})); p.rotateX(-1.57);
+            const p1=p.clone(); p1.position.set(-30,0.05,-30); earthGroup.add(p1);
+            const p2=p.clone(); p2.position.set(30,0.05,40); earthGroup.add(p2);
+        }
+        function createClouds() {
+            const geo = new THREE.BoxGeometry(15,5,8); const mat = new THREE.MeshBasicMaterial({color:0xFFFFFF, transparent:true, opacity:0.7});
+            for(let i=0; i<25; i++) {
+                const c = new THREE.Mesh(geo, mat); c.position.set((Math.random()-0.5)*MAP_SIZE, 40+Math.random()*30, (Math.random()-0.5)*MAP_SIZE);
+                earthGroup.add(c);
+            }
+        }
+        function createMountain() {
+            const g = new THREE.Group(); g.position.set(-80,0,80);
+            const m = new THREE.Mesh(new THREE.ConeGeometry(30,45,8), new THREE.MeshStandardMaterial({color:0x666666})); m.position.y=22.5; m.castShadow=true; g.add(m);
+            const s = new THREE.Mesh(new THREE.ConeGeometry(10,15,8), new THREE.MeshStandardMaterial({color:0xFFFFFF})); s.position.y=38; g.add(s);
+            earthGroup.add(g); obstacles.push({x:-80,z:80,r:30});
+        }
+
+        // --- SETUP ---
+        function setupControls() {
+            const touch = (id, cb) => {
+                const el = document.getElementById(id);
+                el.addEventListener('touchstart', (e)=>{e.preventDefault(); cb(true);});
+                el.addEventListener('touchend', (e)=>{e.preventDefault(); cb(false);});
+            };
+            touch('btn-fwd', v=>inputState.forward=v);
+            touch('btn-back', v=>inputState.backward=v);
+            
+            document.getElementById('btn-jump').addEventListener('touchstart', (e)=>{
+                e.preventDefault();
+                if((gameState==='GROUND' || gameState==='MOON_WALK') && isGrounded) { playerVelocityY=JUMP_FORCE; isGrounded=false; }
+            });
+
+            let lastX=0, lastY=0, tid=null;
+            const lz = document.getElementById('look-zone');
+            lz.addEventListener('touchstart', e=>{ e.preventDefault(); tid=e.changedTouches[0].identifier; lastX=e.changedTouches[0].clientX; lastY=e.changedTouches[0].clientY; });
+            lz.addEventListener('touchmove', e=>{
+                e.preventDefault();
+                for(let t of e.changedTouches) if(t.identifier===tid) {
+                    const dx = t.clientX - lastX;
+                    const dy = t.clientY - lastY;
+                    
+                    if(gameState === 'GROUND' || gameState === 'MOON_WALK') {
+                        targetRotationY -= dx * SENSITIVITY;
+                        targetRotationX = Math.max(-1.5, Math.min(1.5, targetRotationX - dy * SENSITIVITY));
+                    } else if(gameState === 'ROCKET_PRE' || gameState === 'ROCKET_FLY') {
+                        // MODIFIED: Rocket 360 look control
+                        rocketMode.orbitAngle -= dx * SENSITIVITY * 2;
+                        
+                        // Add Vertical Control
+                        if(!rocketMode.orbitAngleVertical) rocketMode.orbitAngleVertical = Math.PI/2;
+                        rocketMode.orbitAngleVertical -= dy * SENSITIVITY * 2;
+                        
+                        // Clamp vertical to avoid flipping under
+                        rocketMode.orbitAngleVertical = Math.max(0.1, Math.min(Math.PI - 0.1, rocketMode.orbitAngleVertical));
+                    }
+                    
+                    lastX = t.clientX; lastY = t.clientY;
+                }
+            });
+
+            window.addEventListener('keydown', e=>{
+                if(e.key.toLowerCase()==='w') inputState.forward=true;
+                if(e.key.toLowerCase()==='s') inputState.backward=true;
+                if(e.key===' ' && (gameState==='GROUND' || gameState==='MOON_WALK') && isGrounded) { playerVelocityY=JUMP_FORCE; isGrounded=false; }
+            });
+            window.addEventListener('keyup', e=>{
+                if(e.key.toLowerCase()==='w') inputState.forward=false;
+                if(e.key.toLowerCase()==='s') inputState.backward=false;
+            });
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        function updateMinimap() {
+            if(!minimapCtx) return;
+            minimapCtx.clearRect(0, 0, 120, 120);
+            const toMap = (val) => (val / (MAP_SIZE/2)) * 60 + 60;
+
+            if(currentPlanet === 'EARTH') {
+                minimapCtx.fillStyle = '#4C9A2A';
+                minimapCtx.beginPath(); minimapCtx.arc(toMap(CLIMB_MT_X), toMap(CLIMB_MT_Z), 12, 0, Math.PI*2); minimapCtx.fill();
+                
+                // Rocket Icon
+                minimapCtx.fillStyle = '#FF0000';
+                minimapCtx.beginPath(); 
+                minimapCtx.moveTo(toMap(rocketPos.x), toMap(rocketPos.z)-5);
+                minimapCtx.lineTo(toMap(rocketPos.x)-4, toMap(rocketPos.z)+4);
+                minimapCtx.lineTo(toMap(rocketPos.x)+4, toMap(rocketPos.z)+4);
+                minimapCtx.fill();
+            } else {
+                minimapCtx.fillStyle = '#555';
+                minimapCtx.fillRect(0,0,120,120);
+            }
+
+            // Draw Player
+            if(gameState === 'GROUND' || gameState === 'MOON_WALK') {
+                minimapCtx.fillStyle = '#FFFFFF';
+                minimapCtx.beginPath(); minimapCtx.arc(toMap(playerPos.x), toMap(playerPos.z), 3, 0, Math.PI*2); minimapCtx.fill();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

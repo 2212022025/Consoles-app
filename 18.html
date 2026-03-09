@@ -1,0 +1,1276 @@
+<!-- START OF FILE text/html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>3D Plains - Realistic Crash Physics</title>
+    <style>
+        /* CORE STYLES */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000; 
+            font-family: 'Segoe UI', sans-serif; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: none;
+        }
+
+        /* LANDSCAPE WARNING */
+        @media screen and (orientation: portrait) {
+            #rotate-msg { display: flex; }
+        }
+        @media screen and (orientation: landscape) {
+            #rotate-msg { display: none; }
+        }
+        #rotate-msg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; color: white; z-index: 3000;
+            display: none; align-items: center; justify-content: center;
+            font-size: 20px; text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        
+        /* UI LAYER */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        /* CROSSHAIR */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            background: white; border-radius: 50%;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            transform: translate(-50%, -50%); pointer-events: none;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            display: none; 
+        }
+
+        /* MINIMAP */
+        #minimap {
+            position: absolute; top: 15px; right: 15px;
+            width: 120px; height: 120px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px; z-index: 20;
+            pointer-events: none; display: none; 
+        }
+
+        /* CONTROLS */
+        .control-group {
+            position: absolute; bottom: 30px; pointer-events: auto;
+            display: flex; gap: 15px; display: none; 
+        }
+        #left-controls { left: 40px; flex-direction: column; align-items: center; }
+        #right-controls { right: 40px; align-items: flex-end; }
+        .game-btn {
+            width: 70px; height: 70px;
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+            color: white; font-size: 24px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: background 0.1s, transform 0.1s;
+            outline: none; -webkit-tap-highlight-color: transparent;
+        }
+        .game-btn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.95); }
+        #btn-jump { width: 80px; height: 80px; background: rgba(255, 200, 100, 0.2); border-color: rgba(255, 200, 100, 0.4); font-size: 16px; }
+        
+        /* CONTEXT BUTTONS */
+        .context-btn {
+            position: absolute; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px; height: 100px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            font-size: 16px; text-align: center; display: none;
+            pointer-events: auto; z-index: 100;
+            flex-direction: column; line-height: 1.2;
+            justify-content: center;
+            border-radius: 50%;
+            backdrop-filter: blur(4px);
+            font-weight: bold;
+            text-shadow: 0 1px 2px black;
+        }
+
+        #btn-switch { top: 50%; background: rgba(255, 50, 50, 0.6); box-shadow: 0 0 20px rgba(255, 50, 50, 0.5); }
+        #btn-enter { top: 65%; background: rgba(50, 255, 50, 0.6); box-shadow: 0 0 20px rgba(50, 255, 50, 0.5); }
+        
+        /* EXIT BUTTON (Top Left, Small) */
+        #btn-exit {
+            position: absolute; top: 20px; left: 20px; 
+            width: 60px; height: 60px; background: #d32f2f;
+            border: 2px solid rgba(255,255,255,0.8); border-radius: 10px;
+            color: white; font-weight: bold; font-size: 12px;
+            display: none; align-items: center; justify-content: center;
+            pointer-events: auto; z-index: 101;
+            box-shadow: 2px 2px 5px black;
+            text-transform: uppercase; text-align: center;
+        }
+        #btn-exit:active { transform: scale(0.95); background: #b71c1c; }
+
+        /* CHANGE FACE BUTTON (Top Left, Below Exit) */
+        #btn-face {
+            position: absolute; top: 90px; left: 20px; 
+            width: 60px; height: 60px; background: #1976D2;
+            border: 2px solid rgba(255,255,255,0.8); border-radius: 10px;
+            color: white; font-weight: bold; font-size: 10px;
+            display: none; align-items: center; justify-content: center;
+            pointer-events: auto; z-index: 101;
+            box-shadow: 2px 2px 5px black;
+            text-transform: uppercase; text-align: center; flex-direction: column;
+        }
+        #btn-face:active { transform: scale(0.95); background: #0D47A1; }
+
+        #look-zone { position: absolute; top: 0; right: 0; width: 60%; height: 100%; pointer-events: auto; z-index: 1; }
+        .control-group { z-index: 10; }
+
+        /* HUD */
+        #hud-top {
+            position: absolute; top: 10px; left: 100px; 
+            display: flex; flex-direction: column; gap: 5px;
+            pointer-events: none; display: none;
+            color: white; font-weight: bold; text-shadow: 1px 1px 0 #000;
+        }
+        
+        /* MENUS & SCREENS */
+        #end-game-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 2001;
+            display: none; pointer-events: auto; flex-direction: column; gap: 10px;
+        }
+        .menu-btn {
+            padding: 15px 40px; font-size: 24px;
+            color: white; border: 2px solid #fff;
+            border-radius: 10px; cursor: pointer;
+            text-transform: uppercase; margin: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            background: #333; width: 250px; text-align: center;
+        }
+        .menu-btn:active { transform: scale(0.95); }
+
+    </style>
+</head>
+<body>
+
+    <div id="rotate-msg">Please Rotate Device to Landscape</div>
+
+    <!-- GAME UI -->
+    <div id="canvas-container"></div>
+    <canvas id="minimap" width="120" height="120"></canvas>
+
+    <div id="ui-layer">
+        <div id="hud-top">
+            <span id="speed-display"></span>
+            <span id="status-display"></span>
+        </div>
+        
+        <!-- Context Buttons -->
+        <div id="btn-switch" class="context-btn">USE<br>LEVER</div>
+        <div id="btn-enter" class="context-btn">DRIVE<br>TRAIN</div>
+        
+        <div id="btn-exit">EXIT</div>
+        <div id="btn-face">CHANGE<br>FACE</div>
+
+        <div id="end-game-ui">
+            <div id="restart-btn" class="menu-btn">RETRY</div>
+        </div>
+        
+        <div id="crosshair"></div>
+        <div id="left-controls" class="control-group">
+            <div class="game-btn" id="btn-fwd">▲</div>
+            <div class="game-btn" id="btn-back">▼</div>
+        </div>
+        <div id="right-controls" class="control-group">
+            <div class="game-btn" id="btn-jump">JUMP</div>
+        </div>
+        <div id="look-zone"></div>
+    </div>
+
+    <!-- Three.js & Utils -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+
+    <!-- MAIN GAME SCRIPT -->
+    <script>
+        // --- GAME SETTINGS ---
+        const MAP_SIZE = 1200; 
+        const BOUNDARY_LIMIT = MAP_SIZE / 2 - 5; 
+        const TREE_COUNT = 10000; 
+        const SPEED = 0.45; 
+        const SENSITIVITY = 0.0025;
+        const PLAYER_HEIGHT = 1.7;
+        const GRAVITY = 0.025;
+        const JUMP_FORCE = 0.5;
+        const GRASS_COUNT = 1500; 
+        const CLIMB_MT_X = 80;
+        const CLIMB_MT_Z = -80;
+        const CLIMB_MT_RADIUS = 60;
+        const CLIMB_MT_HEIGHT = 25;
+        
+        // --- GLOBALS ---
+        let scene, camera, renderer;
+        let playerPos = new THREE.Vector3(0, PLAYER_HEIGHT, 0);
+        let playerVelocityY = 0;
+        let isGrounded = true;
+        let gameState = 'START';
+        let gameSeed = 1;
+        let isDriving = false;
+
+        // Objects
+        let gunMesh;
+        let obstacles = [];
+        let worldMeshes = [];
+        
+        // Train Globals
+        let train1_Cars = []; // AI Train
+        let train2_Cars = []; // Player Train
+        let train2_Engine;    // Reference to Player Engine
+        
+        const AI_SPEED = 0.00015; 
+        let playerTrainSpeed = 0.0;
+        const MAX_TRAIN_SPEED = 0.00045;
+        const TRAIN_ACCEL = 0.000002;
+        
+        // Track Logic
+        const RADIUS_OUTER = 500;
+        const RADIUS_INNER = 475;
+        const SWITCH_DURATION = 0.06;
+
+        let lever1State = false; // Out->In
+        let lever2State = false; // In->Out
+        let levers = []; 
+        
+        // Input
+        let targetRotationX = 0, targetRotationY = 0;
+        let inputState = { forward: false, backward: false };
+        let minimapCtx;
+
+        // --- SEEDED RNG ---
+        function setGameSeed(s) { gameSeed = s % 233280; if(gameSeed <= 0) gameSeed += 233280; }
+        function gameRandom() {
+            gameSeed = (gameSeed * 9301 + 49297) % 233280;
+            return gameSeed / 233280;
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            const container = document.getElementById('canvas-container');
+            const minimapCanvas = document.getElementById('minimap');
+            minimapCtx = minimapCanvas.getContext('2d');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); 
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 500);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 900);
+            camera.rotation.order = 'YXZ'; 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const sunLight = new THREE.DirectionalLight(0xffdfba, 1.2);
+            sunLight.position.set(0, 300, 0); 
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 600;
+            sunLight.shadow.camera.left = -300;
+            sunLight.shadow.camera.right = 300;
+            sunLight.shadow.camera.top = 300;
+            sunLight.shadow.camera.bottom = -300;
+            scene.add(sunLight);
+            
+            const sunGeo = new THREE.SphereGeometry(25, 16, 16);
+            const sunMesh = new THREE.Mesh(sunGeo, new THREE.MeshBasicMaterial({ color: 0xffffaa }));
+            sunMesh.position.set(0, 300, 0);
+            scene.add(sunMesh);
+
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE), new THREE.MeshStandardMaterial({ color: 0x4C9A2A, roughness: 1 }));
+            ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+            scene.add(ground);
+
+            setupControls();
+            setupUIListeners();
+            
+            startGame();
+            animate();
+        }
+
+        function clearWorld() {
+            worldMeshes.forEach(m => scene.remove(m));
+            train1_Cars.forEach(c => scene.remove(c));
+            train2_Cars.forEach(c => scene.remove(c));
+            train1_Cars = [];
+            train2_Cars = [];
+            worldMeshes = [];
+            obstacles = [];
+            levers = [];
+        }
+
+        // --- UI & GAME LOGIC ---
+        function setupUIListeners() {
+            document.getElementById('restart-btn').onclick = () => location.reload();
+            
+            // Switch Lever
+            const switchBtn = document.getElementById('btn-switch');
+            const handleSwitch = (e) => { e.preventDefault(); toggleNearestLever(); };
+            switchBtn.addEventListener('touchstart', handleSwitch);
+            switchBtn.addEventListener('click', handleSwitch); 
+            
+            // Enter Train
+            const enterBtn = document.getElementById('btn-enter');
+            enterBtn.addEventListener('click', (e) => { e.preventDefault(); enterTrainMode(); });
+            enterBtn.addEventListener('touchstart', (e) => { e.preventDefault(); enterTrainMode(); });
+
+            // Exit Train
+            const exitBtn = document.getElementById('btn-exit');
+            exitBtn.addEventListener('click', (e) => { e.preventDefault(); exitTrainMode(); });
+            exitBtn.addEventListener('touchstart', (e) => { e.preventDefault(); exitTrainMode(); });
+
+            // Change Face
+            const faceBtn = document.getElementById('btn-face');
+            faceBtn.addEventListener('click', (e) => { e.preventDefault(); switchFace(); });
+            faceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); switchFace(); });
+        }
+
+        function toggleNearestLever() {
+            let closest = null, minDist = 100;
+            levers.forEach(l => {
+                const dist = playerPos.distanceTo(l.mesh.position);
+                if(dist < minDist) { minDist = dist; closest = l; }
+            });
+            if(closest && minDist < 8) {
+                if(closest.type === 1) {
+                    lever1State = !lever1State;
+                    closest.handle.rotation.x = lever1State ? Math.PI/4 : -Math.PI/4;
+                } else {
+                    lever2State = !lever2State;
+                    closest.handle.rotation.x = lever2State ? Math.PI/4 : -Math.PI/4;
+                }
+            }
+        }
+
+        function switchFace() {
+            if(train2_Cars.length < 2) return;
+            // 1. Store current T values and Paths of the formation from Front to Back
+            const existingStates = train2_Cars.map(c => ({ t: c.userData.t, path: c.userData.path }));
+
+            // 2. Reverse the array so the Engine (currently index 0) becomes Last, and Last Bogie becomes First
+            train2_Cars.reverse();
+
+            // 3. Apply the states back to the new order.
+            //    The new First element (Old Last Bogie) gets the Old First T value.
+            //    This effectively snaps the Engine to the back and the Last Bogie to the front instantly.
+            for(let i=0; i < train2_Cars.length; i++) {
+                train2_Cars[i].userData.t = existingStates[i].t;
+                train2_Cars[i].userData.path = existingStates[i].path;
+                
+                // Reset velocities
+                train2_Cars[i].userData.velocity = 0;
+                train2_Cars[i].userData.velocityVector.set(0,0,0);
+            }
+            playerTrainSpeed = 0; // Stop train to prevent weird jumps
+        }
+
+        function enterTrainMode() {
+            isDriving = true;
+            gameState = 'DRIVING';
+            document.getElementById('btn-enter').style.display = 'none';
+            document.getElementById('btn-switch').style.display = 'none';
+            document.getElementById('btn-jump').style.display = 'none'; 
+            document.getElementById('btn-face').style.display = 'none';
+            document.getElementById('btn-exit').style.display = 'flex';
+            document.getElementById('crosshair').style.display = 'none';
+        }
+
+        function exitTrainMode() {
+            isDriving = false;
+            gameState = 'GROUND';
+            document.getElementById('btn-exit').style.display = 'none';
+            document.getElementById('btn-jump').style.display = 'flex';
+            document.getElementById('crosshair').style.display = 'block';
+            
+            const offset = new THREE.Vector3(5, 0, 0).applyAxisAngle(new THREE.Vector3(0,1,0), train2_Engine.rotation.y);
+            playerPos.copy(train2_Engine.position).add(offset);
+            playerPos.y = getGroundLevel(playerPos.x, playerPos.z) + PLAYER_HEIGHT;
+            camera.position.copy(playerPos);
+        }
+
+        function startGame() {
+            document.getElementById('hud-top').style.display = 'flex';
+            document.getElementById('minimap').style.display = 'block';
+            document.getElementById('btn-jump').style.display = 'flex';
+            document.getElementById('right-controls').style.display = 'flex';
+            document.getElementById('left-controls').style.display = 'flex';
+            document.getElementById('crosshair').style.display = 'block';
+
+            clearWorld();
+            setGameSeed(Math.random() * 10000);
+            createGrass();
+            createClimbableMountain(); 
+            generateNatureOptimized(); 
+            createHouse();
+            createPonds();
+            createClouds(); 
+            createMountain(); 
+            createGun();
+            
+            createTrainSystem();
+            
+            createLever(new THREE.Vector3(510, 0, 0), 1);
+            createLever(new THREE.Vector3(-485, 0, 0), 2);
+
+            gunMesh.visible = true;
+
+            gameState = 'GROUND';
+            const startX = (Math.random() - 0.5) * 100;
+            const startZ = (Math.random() - 0.5) * 100;
+            playerPos.set(startX, getGroundLevel(startX, startZ) + PLAYER_HEIGHT, startZ);
+            
+            targetRotationY = 0; targetRotationX = 0;
+        }
+
+        // --- UPDATE LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            updateTrainPhysics(); 
+            checkTrainCollisions();
+            updatePhysics();
+            updateInteraction(); 
+            if(gameState !== 'START') updateMinimap();
+            renderer.render(scene, camera);
+        }
+
+        function updatePhysics() {
+            if(gameState === 'DRIVING') {
+                // --- 3rd Person Orbit Camera ---
+                // Focus on whichever car is currently the 'Lead' (index 0)
+                const leadCar = train2_Cars[0];
+                const camDist = 18;
+                const cx = leadCar.position.x - Math.sin(targetRotationY) * Math.cos(targetRotationX) * camDist;
+                const cy = leadCar.position.y + 6 - Math.sin(targetRotationX) * camDist; 
+                const cz = leadCar.position.z - Math.cos(targetRotationY) * Math.cos(targetRotationX) * camDist;
+                
+                camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.1);
+                camera.lookAt(leadCar.position.clone().add(new THREE.Vector3(0, 2, 0)));
+                
+                if(!leadCar.userData.derailed) {
+                    if(inputState.forward) {
+                        playerTrainSpeed += TRAIN_ACCEL;
+                        if(playerTrainSpeed > MAX_TRAIN_SPEED) playerTrainSpeed = MAX_TRAIN_SPEED;
+                    } else if(inputState.backward) {
+                        playerTrainSpeed -= TRAIN_ACCEL;
+                        if(playerTrainSpeed < -MAX_TRAIN_SPEED) playerTrainSpeed = -MAX_TRAIN_SPEED;
+                    } else {
+                        playerTrainSpeed *= 0.995; 
+                        if(Math.abs(playerTrainSpeed) < 0.00001) playerTrainSpeed = 0;
+                    }
+                } else {
+                    playerTrainSpeed *= 0.95; 
+                }
+                
+                const speedKmh = Math.abs(playerTrainSpeed * 100000).toFixed(0);
+                document.getElementById('speed-display').innerText = `SPEED: ${speedKmh}`;
+                
+            } else {
+                movePlayer();
+                camera.position.copy(playerPos);
+                document.getElementById('speed-display').innerText = "";
+            }
+        }
+        
+        function updateInteraction() {
+            if(isDriving) return;
+
+            // Lever Logic
+            let showSwitch = false;
+            for(let l of levers) {
+                if(playerPos.distanceTo(l.mesh.position) < 8) {
+                    showSwitch = true;
+                    break;
+                }
+            }
+            document.getElementById('btn-switch').style.display = showSwitch ? 'flex' : 'none';
+
+            // Train Logic
+            if(train2_Engine) {
+                const dist = playerPos.distanceTo(train2_Engine.position);
+                if(dist < 15) {
+                    document.getElementById('btn-enter').style.display = 'flex';
+                    // Show Face Swap button if train is stopped
+                    document.getElementById('btn-face').style.display = (Math.abs(playerTrainSpeed) < 0.0001) ? 'flex' : 'none';
+                } else {
+                    document.getElementById('btn-enter').style.display = 'none';
+                    document.getElementById('btn-face').style.display = 'none';
+                }
+            }
+        }
+        
+        function movePlayer() {
+            camera.rotation.x += (targetRotationX - camera.rotation.x)*0.2;
+            camera.rotation.y += (targetRotationY - camera.rotation.y)*0.2;
+            
+            let fwd = 0;
+            if(inputState.forward) fwd = 1; if(inputState.backward) fwd = -1;
+            
+            const spd = SPEED;
+            const nx = playerPos.x - Math.sin(camera.rotation.y)*fwd*spd;
+            const nz = playerPos.z - Math.cos(camera.rotation.y)*fwd*spd;
+            
+            if(isPositionValid(nx, nz)) { playerPos.x = nx; playerPos.z = nz; }
+            
+            playerVelocityY -= GRAVITY;
+            playerPos.y += playerVelocityY;
+            
+            const gh = getGroundLevel(playerPos.x, playerPos.z);
+            if(playerPos.y <= gh + PLAYER_HEIGHT) {
+                playerPos.y = gh + PLAYER_HEIGHT;
+                playerVelocityY = 0;
+                isGrounded = true;
+            }
+            
+            playerPos.x = Math.max(-BOUNDARY_LIMIT, Math.min(BOUNDARY_LIMIT, playerPos.x));
+            playerPos.z = Math.max(-BOUNDARY_LIMIT, Math.min(BOUNDARY_LIMIT, playerPos.z));
+        }
+
+        // --- TRAIN PATH CALCULATION ---
+        function getTrainPoint(t, pathID) {
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            
+            let radius = RADIUS_OUTER;
+            const RAIL_TOP_Y = 0.7;
+
+            if(pathID === 0) { // Outer
+                radius = RADIUS_OUTER;
+            } else if (pathID === 1) { // Inner
+                radius = RADIUS_INNER;
+            } else if (pathID === 2) { // Transition Out->In
+                 let rT = t / SWITCH_DURATION;
+                 if(rT > 1) rT = 1; if(rT < 0) rT = 0;
+                 const smooth = rT * rT * (3 - 2 * rT);
+                 radius = THREE.MathUtils.lerp(RADIUS_OUTER, RADIUS_INNER, smooth);
+            } else if (pathID === 3) { // Transition In->Out
+                 let rT = (t - 0.5) / SWITCH_DURATION;
+                 if(rT > 1) rT = 1; if(rT < 0) rT = 0;
+                 const smooth = rT * rT * (3 - 2 * rT);
+                 radius = THREE.MathUtils.lerp(RADIUS_INNER, RADIUS_OUTER, smooth);
+            }
+            
+            const theta = t * Math.PI * 2;
+            const x = Math.cos(theta) * radius;
+            const z = Math.sin(theta) * radius;
+            return new THREE.Vector3(x, RAIL_TOP_Y, z);
+        }
+
+        function createTrainSystem() {
+            // Tracks
+            buildTrackCircle(RADIUS_OUTER, 0x555555, 1200);
+            buildTrackCircle(RADIUS_INNER, 0x444444, 1150);
+            buildSwitchTrack(0.0, RADIUS_OUTER, RADIUS_INNER);
+            buildSwitchTrack(0.5, RADIUS_INNER, RADIUS_OUTER);
+
+            // --- TRAIN 1 (AI) ---
+            const eng1 = createEngine(0xD32F2F);
+            // Mass: Engine = 8000, Bogie = 3000
+            eng1.userData = { t: 0.0, path: 0, velocity: AI_SPEED, currentSpeedVal: AI_SPEED, derailed: false, velocityVector: new THREE.Vector3(), rotVel: new THREE.Vector3(), mass: 8000, trainId: 1 }; 
+            scene.add(eng1); train1_Cars.push(eng1);
+
+            for(let i=0; i<12; i++) {
+                const bogie = createBogie(i);
+                bogie.userData = { t: 0.0 - ((i+1) * 0.003), path: 0, velocity: AI_SPEED, currentSpeedVal: AI_SPEED, derailed: false, velocityVector: new THREE.Vector3(), rotVel: new THREE.Vector3(), mass: 3000, trainId: 1 };
+                scene.add(bogie); train1_Cars.push(bogie);
+            }
+
+            // --- TRAIN 2 (PLAYER) ---
+            const eng2 = createEngine(0xFF8C00); 
+            eng2.userData = { t: 0.5, path: 1, velocity: 0, currentSpeedVal: 0, derailed: false, velocityVector: new THREE.Vector3(), rotVel: new THREE.Vector3(), mass: 8000, trainId: 2 }; 
+            scene.add(eng2); train2_Cars.push(eng2);
+            train2_Engine = eng2;
+
+            for(let i=0; i<12; i++) {
+                const bogie2 = createBogie(i);
+                const initialT = 0.5 - ((i+1) * 0.003);
+                bogie2.userData = { 
+                    t: initialT > 0 ? initialT : initialT + 1, 
+                    path: 1, 
+                    velocity: 0, currentSpeedVal: 0, derailed: false,
+                    velocityVector: new THREE.Vector3(), rotVel: new THREE.Vector3(),
+                    mass: 3000, trainId: 2
+                };
+                scene.add(bogie2); train2_Cars.push(bogie2);
+            }
+        }
+
+        function updateTrainPhysics() {
+            // Update AI Train 
+            train1_Cars.forEach((car, i) => {
+                if(car.userData.derailed) { 
+                    applyCrashPhysics(car); 
+                } else {
+                    const prevT = car.userData.t;
+                    car.userData.t += AI_SPEED;
+                    car.userData.currentSpeedVal = AI_SPEED; 
+                    handlePathLogic(car, prevT, car.userData.t, false);
+                    updateCarPosition(car);
+                }
+            });
+
+            // Update Player Train
+            // The first element of train2_Cars is always the "Leader" (controlled by physics)
+            const lead = train2_Cars[0];
+            
+            if(lead.userData.derailed) {
+                applyCrashPhysics(lead);
+            } else {
+                const prevEngT = lead.userData.t;
+                lead.userData.t += playerTrainSpeed;
+                lead.userData.currentSpeedVal = playerTrainSpeed;
+                handlePathLogic(lead, prevEngT, lead.userData.t, true);
+                updateCarPosition(lead);
+            }
+
+            for(let i = 1; i < train2_Cars.length; i++) {
+                const car = train2_Cars[i];
+                const prevCar = train2_Cars[i-1];
+                
+                if(car.userData.derailed) {
+                    applyCrashPhysics(car);
+                } else {
+                    if(!lead.userData.derailed) {
+                        // Follow Logic
+                        // Depending on direction, follow behind. 
+                        // Since we just swapped positions in switchFace, standard follow logic applies.
+                        let targetT = prevCar.userData.t - 0.003;
+                        if(targetT < 0) targetT += 1;
+                        if(targetT > 1) targetT -= 1;
+                        
+                        car.userData.t = targetT;
+                        car.userData.path = prevCar.userData.path; 
+                        car.userData.currentSpeedVal = playerTrainSpeed;
+                        updateCarPosition(car);
+                    } else {
+                        // If leader crashed, slow down naturally
+                        car.userData.currentSpeedVal *= 0.98;
+                        if(Math.abs(car.userData.currentSpeedVal) > 0.00001) {
+                            car.userData.t += car.userData.currentSpeedVal;
+                            updateCarPosition(car);
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- RIGID BODY PHYSICS ---
+        function checkTrainCollisions() {
+            const allCars = [...train1_Cars, ...train2_Cars];
+            for(let i=0; i<allCars.length; i++) {
+                for(let j=i+1; j<allCars.length; j++) {
+                    const c1 = allCars[i];
+                    const c2 = allCars[j];
+
+                    // Skip neighbors in same train unless already crashed (prevents glitching)
+                    const sameTrain = c1.userData.trainId === c2.userData.trainId;
+                    const neighbor = Math.abs(train1_Cars.indexOf(c1) - train1_Cars.indexOf(c2)) === 1 || Math.abs(train2_Cars.indexOf(c1) - train2_Cars.indexOf(c2)) === 1;
+                    if(sameTrain && neighbor && !c1.userData.derailed && !c2.userData.derailed) continue;
+
+                    const dist = c1.position.distanceTo(c2.position);
+                    const collisionDist = 6.0; // Body size approximation
+                    
+                    if(dist < collisionDist) { 
+                        resolveCollision(c1, c2, dist);
+                    }
+                }
+            }
+        }
+
+        function getCarWorldVelocity(car) {
+            if(car.userData.derailed) return car.userData.velocityVector.clone();
+            
+            // Calculate velocity vector from rail path movement
+            const t = car.userData.t;
+            const nextT = t + 0.001; // Small delta
+            const p1 = getTrainPoint(t, car.userData.path);
+            const p2 = getTrainPoint(nextT, car.userData.path);
+            const dir = p2.sub(p1).normalize();
+            
+            const worldSpeed = car.userData.currentSpeedVal * 3140; 
+            return dir.multiplyScalar(worldSpeed);
+        }
+
+        function resolveCollision(c1, c2, dist) {
+            const normal = new THREE.Vector3().subVectors(c1.position, c2.position).normalize();
+
+            // 1. SOLID RIGIDITY (Position Correction)
+            // Push overlapping bodies apart immediately so they don't clip
+            const overlap = 6.0 - dist;
+            if(overlap > 0) {
+                const correction = normal.clone().multiplyScalar(overlap * 0.5);
+                c1.position.add(correction);
+                c2.position.sub(correction);
+            }
+
+            // 2. Initialize Derailment Physics if not already set
+            if(!c1.userData.derailed) {
+                c1.userData.velocityVector = getCarWorldVelocity(c1);
+                c1.userData.derailed = true;
+            }
+            if(!c2.userData.derailed) {
+                c2.userData.velocityVector = getCarWorldVelocity(c2);
+                c2.userData.derailed = true;
+            }
+
+            // 3. CALCULATE IMPACT
+            const v1 = c1.userData.velocityVector;
+            const v2 = c2.userData.velocityVector;
+            
+            const relVel = new THREE.Vector3().subVectors(v1, v2);
+            const velAlongNormal = relVel.dot(normal);
+
+            // If already separating, do nothing
+            if(velAlongNormal > 0) return;
+
+            // Restitution (Bounciness)
+            const e = 0.6; 
+            const m1 = c1.userData.mass;
+            const m2 = c2.userData.mass;
+
+            // Impulse scalar
+            let j = -(1 + e) * velAlongNormal;
+            j /= (1/m1 + 1/m2);
+
+            const impulse = normal.clone().multiplyScalar(j);
+            
+            // Apply bounce impulse
+            v1.add(impulse.clone().multiplyScalar(1/m1));
+            v2.sub(impulse.clone().multiplyScalar(1/m2));
+
+            // 4. HIGH SPEED VERTICAL POP (Explosion)
+            const impactEnergy = Math.abs(velAlongNormal);
+            if(impactEnergy > 0.5) {
+                document.getElementById('status-display').innerText = "CATASTROPHIC IMPACT!";
+                
+                // Add vertical force (Pop up)
+                const popForce = Math.min(impactEnergy * 0.8, 3.0); 
+                v1.y += popForce;
+                v2.y += popForce;
+
+                // Add random rotation (Tumble)
+                const spin = impactEnergy * 0.2;
+                c1.userData.rotVel.add(new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(spin));
+                c2.userData.rotVel.add(new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(spin));
+            } else {
+                document.getElementById('status-display').innerText = "CRASH!";
+            }
+        }
+
+        function applyCrashPhysics(car) {
+            if(!car.userData.velocityVector) car.userData.velocityVector = new THREE.Vector3(0,0,0);
+            
+            // Gravity
+            car.userData.velocityVector.y -= 0.035; 
+            
+            // Update Position
+            car.position.add(car.userData.velocityVector);
+            
+            // Update Rotation
+            car.rotation.x += car.userData.rotVel.x;
+            car.rotation.y += car.userData.rotVel.y;
+            car.rotation.z += car.userData.rotVel.z;
+            
+            // Ground Collision
+            const gh = getGroundLevel(car.position.x, car.position.z);
+            if(car.position.y < gh + 1.5) {
+                car.position.y = gh + 1.5;
+                
+                // Bounce off ground
+                if(car.userData.velocityVector.y < -0.2) {
+                    // Elastic bounce
+                    car.userData.velocityVector.y = -car.userData.velocityVector.y * 0.4; 
+                    
+                    // Ground friction
+                    car.userData.velocityVector.x *= 0.7;
+                    car.userData.velocityVector.z *= 0.7;
+                    
+                    // Add ground tumble friction
+                    car.userData.rotVel.multiplyScalar(0.8);
+                } else {
+                    // Slide
+                    car.userData.velocityVector.y = 0;
+                    car.userData.velocityVector.x *= 0.95;
+                    car.userData.velocityVector.z *= 0.95;
+                    car.userData.rotVel.multiplyScalar(0.9);
+                }
+            } else {
+                // Air Drag
+                car.userData.velocityVector.x *= 0.995;
+                car.userData.velocityVector.z *= 0.995;
+                car.userData.rotVel.multiplyScalar(0.995);
+            }
+        }
+
+        function handlePathLogic(car, prevT, curT, isPlayerTrain) {
+             if(curT > 1) { curT -= 1; car.userData.t = curT; }
+             if(curT < 0) { curT += 1; car.userData.t = curT; }
+
+             if(car.userData.path === 0) { // Outer
+                 if((prevT > 0.9 || prevT < 0.1) && (curT >= 0.0 && curT < 0.06)) {
+                     if(lever1State) car.userData.path = 2; 
+                 }
+             }
+             if(car.userData.path === 2) { 
+                 if(curT >= 0.06 && prevT < 0.06) car.userData.path = 1;
+             }
+             if(car.userData.path === 1) { // Inner
+                 if(prevT < 0.5 && curT >= 0.5) {
+                     if(lever2State) car.userData.path = 3;
+                 }
+             }
+             if(car.userData.path === 3) { 
+                 if(curT >= 0.56 && prevT < 0.56) car.userData.path = 0;
+             }
+        }
+
+        function updateCarPosition(car) {
+            if(car.userData.derailed) return;
+            const pos = getTrainPoint(car.userData.t, car.userData.path);
+            
+            let lookT = car.userData.t + (playerTrainSpeed < 0 ? -0.005 : 0.005);
+            if(car.userData.velocity > 0) lookT = car.userData.t + 0.005;
+
+            const lookPos = getTrainPoint(lookT, car.userData.path);
+            
+            car.position.copy(pos);
+            car.lookAt(lookPos);
+        }
+
+        // --- ASSETS ---
+        function buildTrackCircle(rad, colorVal, count) {
+            const curvePoints = [];
+            const segments = 100;
+            const RAIL_Y_POS = 0.55; 
+            for(let i=0; i <= segments; i++) {
+                const theta = (i / segments) * Math.PI * 2;
+                curvePoints.push(new THREE.Vector3(Math.cos(theta)*rad, RAIL_Y_POS, Math.sin(theta)*rad));
+            }
+            const curve = new THREE.CatmullRomCurve3(curvePoints, true);
+            const railMat = new THREE.MeshStandardMaterial({color: colorVal, metalness: 0.7, roughness: 0.3});
+            const railPointsL = [], railPointsR = [];
+            const up = new THREE.Vector3(0,1,0);
+            for(let i=0; i<=200; i++) {
+                const t = i/200;
+                const pt = curve.getPointAt(t);
+                const tan = curve.getTangentAt(t);
+                const perp = new THREE.Vector3().crossVectors(tan, up).normalize();
+                railPointsL.push(pt.clone().add(perp.clone().multiplyScalar(1.4)));
+                railPointsR.push(pt.clone().add(perp.clone().multiplyScalar(-1.4)));
+            }
+            const rL = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(railPointsL, true), 200, 0.15, 8, true), railMat);
+            const rR = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(railPointsR, true), 200, 0.15, 8, true), railMat);
+            scene.add(rL, rR); worldMeshes.push(rL, rR);
+            const sleeperMat = new THREE.MeshStandardMaterial({color: 0x3E2723, roughness: 1.0});
+            const sleeperGeo = new THREE.BoxGeometry(4.5, 0.4, 1.2);
+            const sleeperMesh = new THREE.InstancedMesh(sleeperGeo, sleeperMat, count);
+            const dummy = new THREE.Object3D();
+            for(let i=0; i<count; i++) {
+                const t = i/count;
+                const pos = curve.getPointAt(t);
+                const tan = curve.getTangentAt(t);
+                dummy.position.set(pos.x, 0.2, pos.z);
+                dummy.lookAt(pos.clone().add(tan));
+                dummy.updateMatrix(); sleeperMesh.setMatrixAt(i, dummy.matrix);
+            }
+            scene.add(sleeperMesh); worldMeshes.push(sleeperMesh);
+        }
+
+        function buildSwitchTrack(startT, rStart, rEnd) {
+            const switchPoints = [];
+            const steps = 60;
+            const RAIL_Y_POS = 0.55;
+            for(let i=0; i<=steps; i++) {
+                const ratio = i/steps;
+                const t = startT + (ratio * SWITCH_DURATION);
+                const smoothRatio = ratio * ratio * (3 - 2 * ratio);
+                const r = THREE.MathUtils.lerp(rStart, rEnd, smoothRatio);
+                const theta = t * Math.PI * 2;
+                switchPoints.push(new THREE.Vector3(Math.cos(theta)*r, RAIL_Y_POS, Math.sin(theta)*r));
+            }
+            const switchCurve = new THREE.CatmullRomCurve3(switchPoints);
+            const swRailPointsL = [];
+            const swRailPointsR = [];
+            const up = new THREE.Vector3(0,1,0);
+            for(let i=0; i<=steps; i++) {
+                const t = i/steps;
+                const pt = switchCurve.getPointAt(t);
+                const tan = switchCurve.getTangentAt(t);
+                const perp = new THREE.Vector3().crossVectors(tan, up).normalize();
+                swRailPointsL.push(pt.clone().add(perp.clone().multiplyScalar(1.4)));
+                swRailPointsR.push(pt.clone().add(perp.clone().multiplyScalar(-1.4)));
+            }
+            const swRailMat = new THREE.MeshStandardMaterial({color: 0x664422, metalness: 0.6, roughness: 0.4});
+            const swRailL = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(swRailPointsL), steps, 0.15, 8, false), swRailMat);
+            const swRailR = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(swRailPointsR), steps, 0.15, 8, false), swRailMat);
+            scene.add(swRailL, swRailR); worldMeshes.push(swRailL, swRailR);
+            const swSleeperCount = 40;
+            const swSleeperMat = new THREE.MeshStandardMaterial({color: 0x3E2723, roughness: 1.0});
+            const sleeperGeo = new THREE.BoxGeometry(4.5, 0.4, 1.2);
+            const swSleeperMesh = new THREE.InstancedMesh(sleeperGeo, swSleeperMat, swSleeperCount);
+            const dummy = new THREE.Object3D();
+            for(let i=0; i<swSleeperCount; i++) {
+                const t = i/swSleeperCount;
+                const pos = switchCurve.getPointAt(t);
+                const tan = switchCurve.getTangentAt(t);
+                dummy.position.set(pos.x, 0.2, pos.z);
+                dummy.lookAt(pos.clone().add(tan));
+                dummy.updateMatrix(); swSleeperMesh.setMatrixAt(i, dummy.matrix);
+            }
+            scene.add(swSleeperMesh); worldMeshes.push(swSleeperMesh);
+        }
+
+        function createLever(pos, type) {
+            const leverMesh = new THREE.Group();
+            leverMesh.position.copy(pos); leverMesh.lookAt(0, 0, 0); 
+            const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 3), new THREE.MeshStandardMaterial({color: 0x333333}));
+            base.position.y = 0.25; leverMesh.add(base);
+            const holder = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1, 1), new THREE.MeshStandardMaterial({color: 0x111111}));
+            holder.position.y = 0.8; leverMesh.add(holder);
+            const leverHandle = new THREE.Group();
+            leverHandle.position.set(0, 0.8, 0);
+            const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3), new THREE.MeshStandardMaterial({color: 0xFF0000}));
+            stick.position.y = 1.5; leverHandle.add(stick);
+            leverHandle.rotation.x = -Math.PI / 4; 
+            leverMesh.add(leverHandle);
+            scene.add(leverMesh); worldMeshes.push(leverMesh); 
+            obstacles.push({x: pos.x, z: pos.z, r: 2});
+            levers.push({ mesh: leverMesh, handle: leverHandle, type: type });
+        }
+
+        function createEngine(bodyColorHex) {
+            const group = new THREE.Group();
+            const matBody = new THREE.MeshStandardMaterial({ color: bodyColorHex, roughness: 0.3 }); 
+            const matDark = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.7 }); 
+            const matWin = new THREE.MeshStandardMaterial({ color: 0x87CEEB, metalness: 0.5, roughness: 0.1 });
+            const matYell = new THREE.MeshStandardMaterial({ color: 0xFFC107 });
+            const matChain = new THREE.MeshStandardMaterial({ color: 0x111111 });
+
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(3, 1.5, 8), matDark);
+            chassis.position.y = 1.5; group.add(chassis);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 5), matBody);
+            body.position.set(0, 3.5, 1.5); group.add(body);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(3.1, 3.5, 2.5), matBody);
+            cab.position.set(0, 4.0, -2.5); group.add(cab);
+            const winF = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.2), matWin);
+            winF.position.set(0, 4.5, -3.76); winF.rotateY(Math.PI); group.add(winF);
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(3.05, 0.2, 8.1), matYell);
+            stripe.position.set(0, 3.0, 0); group.add(stripe);
+            const wheelGeo = new THREE.CylinderGeometry(0.7, 0.7, 3.2, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({color: 0x111111});
+            wheelGeo.rotateZ(Math.PI/2);
+            const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.position.set(0, 0.7, 2.5);
+            const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.position.set(0, 0.7, -2.5);
+            const w3 = new THREE.Mesh(wheelGeo, wheelMat); w3.position.set(0, 0.7, 0);
+            group.add(w1, w2, w3);
+            const hlGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.5); hlGeo.rotateX(Math.PI/2);
+            const hl = new THREE.Mesh(hlGeo, new THREE.MeshStandardMaterial({color:0xFFFFDD, emissive:0xFFFFAA}));
+            hl.position.set(0, 3.5, 4.0); group.add(hl);
+            const light = new THREE.SpotLight(0xffffee, 2, 80, 0.5, 0.5, 1);
+            light.position.set(0, 3.5, 4.2); light.target.position.set(0, 0, 20);
+            group.add(light); group.add(light.target);
+            const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1), matDark);
+            stack.position.set(0, 5, 2); group.add(stack);
+            const chain = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 1.5), matChain);
+            chain.position.set(0, 1.5, -4.5); group.add(chain);
+            group.castShadow = true;
+            return group;
+        }
+
+        function createBogie(index) {
+            const group = new THREE.Group();
+            const matBody = new THREE.MeshStandardMaterial({ color: 0x1976D2, roughness: 0.4 });
+            const matRoof = new THREE.MeshStandardMaterial({ color: 0x9E9E9E, roughness: 0.5 });
+            const matDark = new THREE.MeshStandardMaterial({ color: 0x212121 });
+            const matChain = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.0, 7), matDark);
+            chassis.position.y = 1.3; group.add(chassis);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.5, 6.8), matBody);
+            body.position.y = 3.0; group.add(body);
+            const roofBox = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.5, 6.8), matRoof);
+            roofBox.position.y = 4.4; group.add(roofBox);
+            const wheelGeo = new THREE.CylinderGeometry(0.7, 0.7, 3.0, 16);
+            wheelGeo.rotateZ(Math.PI/2);
+            const w1 = new THREE.Mesh(wheelGeo, matDark); w1.position.set(0, 0.7, 2.2);
+            const w2 = new THREE.Mesh(wheelGeo, matDark); w2.position.set(0, 0.7, -2.2);
+            group.add(w1, w2);
+            const winGeo = new THREE.BoxGeometry(2.9, 1.0, 1.2);
+            const winMat = new THREE.MeshStandardMaterial({color: 0x87CEEB});
+            const win1 = new THREE.Mesh(winGeo, winMat); win1.position.y = 3.2; win1.position.z = 1.8;
+            const win2 = new THREE.Mesh(winGeo, winMat); win2.position.y = 3.2; win2.position.z = -1.8;
+            const win3 = new THREE.Mesh(winGeo, winMat); win3.position.y = 3.2; win3.position.z = 0;
+            group.add(win1, win2, win3);
+            const chainF = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 2.0), matChain);
+            chainF.position.set(0, 1.3, 4.2); group.add(chainF);
+            return group;
+        }
+
+        // --- ENVIRONMENT LOGIC ---
+        function createGrass() {
+            const geo = new THREE.PlaneGeometry(0.5,0.8); geo.translate(0,0.4,0);
+            const mat = new THREE.MeshLambertMaterial({color:0x5da130, side:2, transparent:true});
+            const mesh = new THREE.InstancedMesh(geo, mat, GRASS_COUNT);
+            const d = new THREE.Object3D();
+            const ponds = [{x: -30, z: -30}, {x: 30, z: 40}];
+            for(let i=0; i<GRASS_COUNT; i++) {
+                const pond = ponds[Math.floor(gameRandom() * ponds.length)];
+                const dist = gameRandom() * 25; 
+                const ang = gameRandom() * Math.PI * 2;
+                if(dist < 12) continue; 
+                const x = pond.x + Math.cos(ang) * dist;
+                const z = pond.z + Math.sin(ang) * dist;
+                d.position.set(x, 0, z); 
+                d.rotation.y=gameRandom()*3; d.scale.setScalar(0.8+gameRandom()*0.4);
+                d.updateMatrix(); mesh.setMatrixAt(i, d.matrix);
+            }
+            scene.add(mesh); worldMeshes.push(mesh);
+        }
+
+        function getGroundLevel(x, z) {
+            const d = Math.hypot(x-CLIMB_MT_X, z-CLIMB_MT_Z);
+            return d < CLIMB_MT_RADIUS ? CLIMB_MT_HEIGHT*(1-d/CLIMB_MT_RADIUS) : 0;
+        }
+
+        function isPositionValid(x, z) {
+            if(x>13 && x<27 && z>-27 && z<-13) return false; 
+            
+            // Static Obstacles
+            for(let i=0; i<obstacles.length; i++) {
+                const o = obstacles[i];
+                if(Math.abs(x - o.x) > 5 || Math.abs(z - o.z) > 5) continue;
+                if(Math.hypot(x-o.x, z-o.z) < o.r) return false;
+            }
+
+            // Train Collision Check
+            const allCars = [...train1_Cars, ...train2_Cars];
+            for(let car of allCars) {
+                const dist = Math.hypot(x - car.position.x, z - car.position.z);
+                if(dist < 3.0) return false; // Collision radius
+            }
+
+            return true;
+        }
+
+        function createGun() {
+            gunMesh = new THREE.Group();
+            gunMesh.add(new THREE.Mesh(new THREE.BoxGeometry(0.1,0.1,0.6), new THREE.MeshStandardMaterial({color:0x222222})).translateX(0.2).translateY(-0.2).translateZ(-0.4));
+            gunMesh.visible=false; camera.add(gunMesh);
+        }
+
+        function createClimbableMountain() {
+            const m = new THREE.Mesh(new THREE.ConeGeometry(CLIMB_MT_RADIUS,CLIMB_MT_HEIGHT,32), new THREE.MeshStandardMaterial({color:0x5da130,roughness:1}));
+            m.position.set(CLIMB_MT_X, CLIMB_MT_HEIGHT/2, CLIMB_MT_Z); m.receiveShadow=true; scene.add(m);
+        }
+
+        function createBranchyTree() {
+            const geoms = [];
+            const trunk = new THREE.CylinderGeometry(0.4, 0.6, 5, 5);
+            trunk.translate(0, 2.5, 0);
+            geoms.push(trunk);
+            const b1 = new THREE.CylinderGeometry(0.2, 0.3, 2.5, 4);
+            b1.translate(0, 1.25, 0); b1.rotateZ(0.6); b1.translate(0, 3, 0);
+            geoms.push(b1);
+            const b2 = new THREE.CylinderGeometry(0.2, 0.3, 2.0, 4);
+            b2.translate(0, 1.0, 0); b2.rotateZ(-0.5); b2.rotateX(0.5); b2.translate(0, 3.5, 0);
+            geoms.push(b2);
+            const b3 = new THREE.CylinderGeometry(0.1, 0.2, 1.5, 4);
+            b3.translate(0, 0.75, 0); b3.rotateX(-0.8); b3.translate(0, 2, 0);
+            geoms.push(b3);
+
+            if(typeof THREE.BufferGeometryUtils !== 'undefined') {
+                 return THREE.BufferGeometryUtils.mergeBufferGeometries(geoms);
+            } else {
+                return trunk;
+            }
+        }
+
+        function generateNatureOptimized() {
+            const g1_trunk = new THREE.CylinderGeometry(0.5, 0.7, 2, 6); g1_trunk.translate(0, 1, 0);
+            const g1_leaves = new THREE.ConeGeometry(2.5, 6, 6); g1_leaves.translate(0, 4, 0);
+            
+            const g2_trunk = new THREE.CylinderGeometry(0.7, 0.9, 2.5, 6); g2_trunk.translate(0, 1.25, 0);
+            const g2_leaves = new THREE.DodecahedronGeometry(3.0); g2_leaves.translate(0, 4.5, 0);
+            
+            const g3_trunk = new THREE.CylinderGeometry(0.3, 0.5, 4, 5); g3_trunk.translate(0, 2, 0);
+            const g3_leaves = new THREE.ConeGeometry(1.5, 5, 5); g3_leaves.translate(0, 5, 0);
+
+            const g4_branches = createBranchyTree(); 
+
+            const matTrunkDark = new THREE.MeshStandardMaterial({color:0x3d2817});
+            const matLeafPine = new THREE.MeshStandardMaterial({color:0x2d5a27});
+            const matLeafOak = new THREE.MeshStandardMaterial({color:0x4d7a27});
+            const matLeafBirch = new THREE.MeshStandardMaterial({color:0x5da130});
+            const matBranch = new THREE.MeshStandardMaterial({color:0x4A3C31});
+
+            const types = [
+                { tG: g1_trunk, tM: matTrunkDark, lG: g1_leaves, lM: matLeafPine, r: 1.0, hasLeaves: true },
+                { tG: g2_trunk, tM: matTrunkDark, lG: g2_leaves, lM: matLeafOak, r: 1.5, hasLeaves: true },
+                { tG: g3_trunk, tM: matTrunkDark, lG: g3_leaves, lM: matLeafBirch, r: 0.8, hasLeaves: true },
+                { tG: g4_branches, tM: matBranch, lG: null, lM: null, r: 0.7, hasLeaves: false } 
+            ];
+
+            const maxPerType = Math.ceil(TREE_COUNT / types.length);
+            const dummy = new THREE.Object3D();
+
+            types.forEach(type => {
+                const meshTrunk = new THREE.InstancedMesh(type.tG, type.tM, maxPerType);
+                let meshLeaf = null;
+                if(type.hasLeaves) {
+                    meshLeaf = new THREE.InstancedMesh(type.lG, type.lM, maxPerType);
+                    meshLeaf.castShadow = true; meshLeaf.receiveShadow = true;
+                }
+                
+                meshTrunk.castShadow = true; meshTrunk.receiveShadow = true;
+                
+                let count = 0;
+                for(let i=0; i<maxPerType; i++) {
+                    const x = (gameRandom()-0.5) * MAP_SIZE;
+                    const z = (gameRandom()-0.5) * MAP_SIZE;
+                    if(Math.hypot(x,z)<15) continue; 
+                    if(Math.hypot(x-CLIMB_MT_X,z-CLIMB_MT_Z) < CLIMB_MT_RADIUS) continue; 
+                    const distFromCenter = Math.hypot(x, z);
+                    if(distFromCenter > 460 && distFromCenter < 520) continue; 
+                    const scale = 0.8 + gameRandom() * 0.6;
+                    dummy.position.set(x, 0, z);
+                    dummy.rotation.set(0, gameRandom() * Math.PI * 2, 0);
+                    dummy.scale.setScalar(scale);
+                    dummy.updateMatrix();
+                    meshTrunk.setMatrixAt(count, dummy.matrix);
+                    if(type.hasLeaves) meshLeaf.setMatrixAt(count, dummy.matrix);
+                    obstacles.push({x:x, z:z, r: type.r * scale});
+                    count++;
+                }
+                scene.add(meshTrunk); worldMeshes.push(meshTrunk);
+                if(type.hasLeaves) {
+                    scene.add(meshLeaf); worldMeshes.push(meshLeaf);
+                }
+            });
+        }
+
+        function createHouse() {
+            const h = new THREE.Group(); h.position.set(20,0,-20);
+            const w = new THREE.Mesh(new THREE.BoxGeometry(12,6,12), new THREE.MeshStandardMaterial({color:0xD2B48C})); w.position.y=3; w.castShadow=true; h.add(w);
+            const r = new THREE.Mesh(new THREE.ConeGeometry(10,5,4), new THREE.MeshStandardMaterial({color:0x8B0000})); r.position.y=8.5; r.rotateY(0.78); h.add(r);
+            scene.add(h);
+        }
+        function createPonds() {
+            const p = new THREE.Mesh(new THREE.CircleGeometry(12,32), new THREE.MeshStandardMaterial({color:0x0077be})); p.rotateX(-1.57);
+            const p1=p.clone(); p1.position.set(-30,0.05,-30); scene.add(p1);
+            const p2=p.clone(); p2.position.set(30,0.05,40); scene.add(p2);
+        }
+        function createClouds() {
+            const geo = new THREE.BoxGeometry(15,5,8); const mat = new THREE.MeshBasicMaterial({color:0xFFFFFF, transparent:true, opacity:0.7});
+            for(let i=0; i<60; i++) { 
+                const c = new THREE.Mesh(geo, mat); c.position.set((Math.random()-0.5)*MAP_SIZE, 40+Math.random()*30, (Math.random()-0.5)*MAP_SIZE);
+                scene.add(c);
+            }
+        }
+        function createMountain() {
+            const g = new THREE.Group(); g.position.set(-80,0,80);
+            const m = new THREE.Mesh(new THREE.ConeGeometry(30,45,8), new THREE.MeshStandardMaterial({color:0x666666})); m.position.y=22.5; m.castShadow=true; g.add(m);
+            const s = new THREE.Mesh(new THREE.ConeGeometry(10,15,8), new THREE.MeshStandardMaterial({color:0xFFFFFF})); s.position.y=38; g.add(s);
+            scene.add(g); obstacles.push({x:-80,z:80,r:30});
+        }
+
+        // --- SETUP ---
+        function setupControls() {
+            const touch = (id, cb) => {
+                const el = document.getElementById(id);
+                el.addEventListener('touchstart', (e)=>{e.preventDefault(); cb(true);});
+                el.addEventListener('touchend', (e)=>{e.preventDefault(); cb(false);});
+            };
+            touch('btn-fwd', v=>inputState.forward=v);
+            touch('btn-back', v=>inputState.backward=v);
+            document.getElementById('btn-jump').addEventListener('touchstart', (e)=>{
+                e.preventDefault();
+                if(gameState==='GROUND' && isGrounded) { playerVelocityY=JUMP_FORCE; isGrounded=false; }
+            });
+
+            let lastX=0, lastY=0, tid=null;
+            const lz = document.getElementById('look-zone');
+            lz.addEventListener('touchstart', e=>{ e.preventDefault(); tid=e.changedTouches[0].identifier; lastX=e.changedTouches[0].clientX; lastY=e.changedTouches[0].clientY; });
+            lz.addEventListener('touchmove', e=>{
+                e.preventDefault();
+                for(let t of e.changedTouches) if(t.identifier===tid) {
+                    targetRotationY -= (t.clientX-lastX)*SENSITIVITY;
+                    targetRotationX = Math.max(-1.5, Math.min(1.5, targetRotationX - (t.clientY-lastY)*SENSITIVITY));
+                    lastX=t.clientX; lastY=t.clientY;
+                }
+            });
+
+            window.addEventListener('keydown', e=>{
+                if(e.key.toLowerCase()==='w') inputState.forward=true;
+                if(e.key.toLowerCase()==='s') inputState.backward=true;
+                if(e.key===' ' && gameState==='GROUND' && isGrounded) { playerVelocityY=JUMP_FORCE; isGrounded=false; }
+            });
+            window.addEventListener('keyup', e=>{
+                if(e.key.toLowerCase()==='w') inputState.forward=false;
+                if(e.key.toLowerCase()==='s') inputState.backward=false;
+            });
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        function updateMinimap() {
+            if(!minimapCtx) return;
+            minimapCtx.clearRect(0, 0, 120, 120);
+            const toMap = (val) => (val / (MAP_SIZE/2)) * 60 + 60;
+
+            // Draw Mountain
+            minimapCtx.fillStyle = '#4C9A2A';
+            minimapCtx.beginPath(); minimapCtx.arc(toMap(CLIMB_MT_X), toMap(CLIMB_MT_Z), 5, 0, Math.PI*2); minimapCtx.fill();
+            
+            // Draw Train 1 (AI - Yellow)
+            if(train1_Cars.length > 0) {
+                minimapCtx.fillStyle = '#FFC107'; // Engine
+                minimapCtx.beginPath(); minimapCtx.arc(toMap(train1_Cars[0].position.x), toMap(train1_Cars[0].position.z), 3, 0, Math.PI*2); minimapCtx.fill();
+            }
+
+            // Draw Train 2 (Player - Orange)
+            train2_Cars.forEach((car, index) => {
+                if(car.userData.trainId === 2) { // Just a safety check
+                    // Engine vs Bogies logic depends on if we swapped face or not.
+                    // The Engine mesh is `train2_Engine`. 
+                    // Let's color based on mass for visual clarity? Or just use same logic.
+                    // If car === train2_Engine, it's the engine.
+                    if(car === train2_Engine) {
+                        minimapCtx.fillStyle = '#FF8C00'; // Engine Big Dot
+                        minimapCtx.beginPath(); minimapCtx.arc(toMap(car.position.x), toMap(car.position.z), 4, 0, Math.PI*2); minimapCtx.fill();
+                    } else {
+                        minimapCtx.fillStyle = '#FFB347'; 
+                        minimapCtx.fillRect(toMap(car.position.x)-1, toMap(car.position.z)-1, 2, 2);
+                    }
+                }
+            });
+
+            // Draw Levers
+            minimapCtx.fillStyle = '#FF0000';
+            levers.forEach(l => {
+                 minimapCtx.fillRect(toMap(l.mesh.position.x)-2, toMap(l.mesh.position.z)-2, 4, 4);
+            });
+
+            // Player Dot
+            minimapCtx.fillStyle = '#FF0000';
+            minimapCtx.beginPath(); minimapCtx.arc(toMap(playerPos.x), toMap(playerPos.z), 2, 0, Math.PI*2); minimapCtx.fill();
+        }
+
+        init();
+    </script>
+</body>
+</html>
