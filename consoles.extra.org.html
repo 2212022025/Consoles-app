@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Studio | Submit Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #0B0F19; 
+            color: #E2E8F0;
+            overflow-x: hidden;
+        }
+        
+        /* Ambient Background Glow */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.1) 40%, rgba(0,0,0,0) 70%);
+            z-index: -1;
+            pointer-events: none;
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        }
+
+        /* Glassmorphism Card */
+        .glass-card { 
+            background: rgba(17, 24, 39, 0.6); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 24px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1); 
+        }
+
+        /* Inputs */
+        .input-group { position: relative; }
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            transition: 0.3s ease;
+        }
+        .input-box { 
+            width: 100%; 
+            padding: 14px 14px 14px 44px; 
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 12px; 
+            color: #fff;
+            transition: all 0.3s ease; 
+        }
+        .input-box::placeholder { color: #475569; }
+        .input-box:focus { 
+            border-color: #3b82f6; 
+            background: rgba(0, 0, 0, 0.4); 
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); 
+        }
+        .input-box:focus + .input-icon { color: #3b82f6; }
+
+        /* Upload Area */
+        .upload-area { 
+            border: 2px dashed rgba(255, 255, 255, 0.15); 
+            border-radius: 16px; 
+            padding: 30px 20px; 
+            text-align: center; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer; 
+        }
+        .upload-area.dragover, .upload-area:hover { 
+            border-color: #8b5cf6; 
+            background: rgba(139, 92, 246, 0.08); 
+            transform: translateY(-2px);
+        }
+
+        /* Animated Button */
+        .btn-gradient {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            background-size: 200% 200%;
+            animation: gradient-shift 3s ease infinite;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-gradient::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg) translateY(-100%);
+            transition: 0.6s;
+        }
+        .btn-gradient:hover::after { transform: rotate(45deg) translateY(100%); }
+        
+        @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* Popup */
+        #popup { opacity: 0; visibility: hidden; transition: all 0.4s ease; backdrop-filter: blur(12px); }
+        #popup.show { opacity: 1; visibility: visible; }
+        .popup-content { transform: scale(0.9); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #popup.show .popup-content { transform: scale(1); }
+
+        /* Custom Spinner */
+        .spinner {
+            width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;
+            display: inline-block; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen py-12 px-4 flex items-center justify-center">
+
+    <div class="ambient-glow"></div>
+
+    <div class="glass-card max-w-2xl w-full p-8 md:p-10 relative z-10">
+        <div class="mb-10 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-600/20 border border-white/10 mb-4">
+                <i data-lucide="gamepad-2" class="w-8 h-8 text-blue-400"></i>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold mb-3 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+           Publish Your Project
+            </h1>
+            <p class="text-slate-400">𝚂𝚞𝚋𝚖𝚒𝚝 𝚢𝚘𝚞𝚛 𝚙𝚛𝚘𝚓𝚎𝚌𝚝 𝚝𝚘 𝙲𝙿-𝙲𝚘𝚗𝚜𝚘𝚕𝚎 𝙾𝚁𝙶 𝚏𝚘𝚛  𝚛𝚎𝚟𝚒𝚎𝚠 & 𝙿𝚞𝚋𝚕𝚒𝚜𝚑𝚒𝚗𝚐.</p>
+        </div>
+
+        <form id="gameForm" class="space-y-6">
+            <!-- Developer Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Your Name</label>
+                    <div class="input-group">
+                        <input type="text" id="name" class="input-box" placeholder="Alex Reed" required>
+                        <i data-lucide="user" class="w-5 h-5 input-icon"></i>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Username</label>
+                    <div class="input-group">
+                        <input type="text" id="username" class="input-box" placeholder="alex_dev" required>
+                        <i data-lucide="at-sign" class="w-5 h-5 input-icon"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Profile Icon URL</label>
+                <div class="input-group">
+                    <input type="url" id="profileIcon" class="input-box" placeholder="https://example.com/avatar.png">
+                    <i data-lucide="image" class="w-5 h-5 input-icon"></i>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 py-2">
+                <div class="h-[1px] flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-widest">Game Details</span>
+                <div class="h-[1px] flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+            </div>
+
+            <!-- Game Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Game Name</label>
+                    <div class="input-group">
+                        <input type="text" id="gameName" class="input-box" placeholder="Neon Runner" required>
+                        <i data-lucide="swords" class="w-5 h-5 input-icon"></i>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Classification / Genre</label>
+                    <div class="input-group">
+                        <input type="text" id="classification" class="input-box" placeholder="Action / Arcade" required>
+                        <i data-lucide="tags" class="w-5 h-5 input-icon"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Thumbnail URL</label>
+                <div class="input-group">
+                    <input type="url" id="gameThumb" class="input-box" placeholder="https://example.com/thumb.jpg">
+                    <i data-lucide="monitor-play" class="w-5 h-5 input-icon"></i>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Game File OR GAME URL</label>
+                <div class="input-group">
+                    <input type="url" id="gameUrl" class="input-box" placeholder="https://catbox.moe/..." required>
+                    <i data-lucide="link" class="w-5 h-5 input-icon"></i>
+                </div>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="upload-area mt-4" id="dropZone">
+                <input type="file" id="fileInput" class="hidden" accept=".zip,.html">
+                <div class="flex flex-col items-center justify-center space-y-3 pointer-events-none">
+                    <div class="p-4 bg-slate-800/50 rounded-full border border-slate-700 text-blue-400" id="uploadIcon">
+                        <i data-lucide="cloud-upload" class="w-8 h-8"></i>
+                    </div>
+                    <div id="uploadText" class="text-sm font-semibold text-slate-300">
+                        Drag & drop your game file, or <span class="text-blue-400 underline decoration-blue-400/30 underline-offset-4 pointer-events-auto cursor-pointer" onclick="document.getElementById('fileInput').click()">browse</span>
+                    </div>
+                    <div id="uploadSubtext" class="text-xs text-slate-500">Supports .zip or .html • Auto-uploads to Catbox.moe</div>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full btn-gradient text-white py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all active:scale-[0.98] mt-6 flex items-center justify-center gap-2">
+                <span>Publish Project</span>
+                <i data-lucide="rocket" class="w-5 h-5"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="popup" class="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50">
+        <div class="popup-content bg-slate-900 border border-slate-800 max-w-sm w-full p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-emerald-600"></div>
+            <div class="mx-auto mb-6 flex items-center justify-center w-20 h-20 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full">
+                <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Upload Complete!</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">Your game is currently <b class="text-white">Under Review</b>. We will notify you soon, once it is finally processed. </p>
+            <button onclick="window.location.reload()" class="mt-8 w-full py-3.5 bg-white text-black hover:bg-slate-200 transition rounded-xl font-bold">
+                Return to Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZOaqsdA5t0PtQsOzRVZYhJB2fZyKGxHU",
+            authDomain: "console-post-d8156.firebaseapp.com",
+            databaseURL: "https://console-post-d8156-default-rtdb.firebaseio.com",
+            projectId: "console-post-d8156",
+            storageBucket: "console-post-d8156.firebasestorage.app",
+            messagingSenderId: "759849666433",
+            appId: "1:759849666433:web:c8642e2296ccc072048a80"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const fileInput = document.getElementById('fileInput');
+        const gameUrlField = document.getElementById('gameUrl');
+        const uploadText = document.getElementById('uploadText');
+        const uploadSubtext = document.getElementById('uploadSubtext');
+        const dropZone = document.getElementById('dropZone');
+        const uploadIcon = document.getElementById('uploadIcon');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Drag & Drop logic
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            if(files.length) {
+                fileInput.files = files;
+                handleFileUpload(files[0]);
+            }
+        }, false);
+
+        // Click logic
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files[0]) handleFileUpload(e.target.files[0]);
+        });
+
+        // Catbox Upload Logic
+        async function handleFileUpload(file) {
+            uploadIcon.innerHTML = `<span class="spinner"></span>`;
+            uploadText.innerHTML = `<span class="text-blue-400">Uploading </span>`;
+            uploadSubtext.innerHTML = `Please wait, handling file: ${file.name}`;
+            
+            const formData = new FormData();
+            formData.append('reqtype', 'fileupload');
+            formData.append('fileToUpload', file);
+
+            try {
+                const response = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://catbox.moe/user/api.php'), {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const resultUrl = await response.text();
+                    gameUrlField.value = resultUrl.trim();
+                    
+                    // Success UI Update
+                    dropZone.style.borderColor = "#10b981";
+                    dropZone.style.background = "rgba(16, 185, 129, 0.05)";
+                    uploadIcon.innerHTML = `<i data-lucide="check" class="w-8 h-8 text-green-400"></i>`;
+                    uploadIcon.className = "p-4 bg-green-500/10 rounded-full border border-green-500/20";
+                    uploadText.innerHTML = `<span class="text-green-400 font-bold">Successfully Uploaded!</span>`;
+                    uploadSubtext.innerHTML = `Linked applied to the Game URL field.`;
+                    lucide.createIcons(); // Re-init icon
+                } else {
+                    throw new Error("Catbox upload failed");
+                }
+            } catch (err) {
+                console.error(err);
+                dropZone.style.borderColor = "#ef4444";
+                uploadIcon.innerHTML = `<i data-lucide="x" class="w-8 h-8 text-red-400"></i>`;
+                uploadText.innerHTML = `<span class="text-red-400 font-bold">Upload Failed</span>`;
+                uploadSubtext.innerHTML = `Click or drag to try again.`;
+                lucide.createIcons();
+            }
+        }
+
+        // Submit to Firebase
+        document.getElementById('gameForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Button Loading State
+            const originalBtnContent = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="spinner"></span> <span class="ml-2">Publishing...</span>`;
+
+            const payload = {
+                developerName: document.getElementById('name').value,
+                username: document.getElementById('username').value,
+                profileIcon: document.getElementById('profileIcon').value,
+                gameName: document.getElementById('gameName').value,
+                classification: document.getElementById('classification').value,
+                thumbnail: document.getElementById('gameThumb').value,
+                gameUrl: document.getElementById('gameUrl').value,
+                submittedAt: new Date().toISOString(),
+                status: "Under Review"
+            };
+
+            try {
+                await push(ref(db, 'publishRequests'), payload);
+                document.getElementById('popup').classList.add('show');
+            } catch (error) {
+                alert("Database Error: " + error.message);
+            } finally {
+                // Reset button state just in case
+                submitBtn.innerHTML = originalBtnContent;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
