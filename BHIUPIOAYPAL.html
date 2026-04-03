@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Authentication</title>
+    <style>
+        :root {
+            --primary-color: #00ffcc;
+            --error-color: #ff4b2b;
+            --bg-color: #0a0a0a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid rgba(0, 255, 204, 0.1);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Text Styles */
+        .status-text {
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .details {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        /* Error State */
+        .access-blocked {
+            color: var(--error-color);
+            border-color: var(--error-color);
+            box-shadow: 0 0 30px rgba(255, 75, 43, 0.4);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .glitch {
+            animation: glitch-skew 1s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-skew {
+            0% { transform: skew(2deg); }
+            100% { transform: skew(-2deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="main-card" class="container">
+        <div id="loading-section">
+            <div class="loader"></div>
+            <p class="status-text">FETCHING MODERATOR DETAILS...</p>
+            <p class="details">Validating hardware ID & secure tokens</p>
+        </div>
+
+        <div id="error-section" class="hidden">
+            <h1 class="glitch" style="font-size: 3rem; margin: 0;">✖</h1>
+            <p class="status-text" style="color: var(--error-color); font-weight: bold;">ACCESS DENIED</p>
+            <hr style="border: 0.5px solid var(--error-color); opacity: 0.3;">
+            <p>This device is NOT a Moderator Device.</p>
+            <p class="details">Your IP and attempt have been logged. Access Blocked.</p>
+        </div>
+    </div>
+
+    <script>
+        // Wait for 7 seconds (7000 milliseconds)
+        setTimeout(() => {
+            // Hide loading elements
+            document.getElementById('loading-section').classList.add('hidden');
+            
+            // Show error elements
+            const errorSection = document.getElementById('error-section');
+            errorSection.classList.remove('hidden');
+            
+            // Change container style to error theme
+            document.getElementById('main-card').classList.add('access-blocked');
+            
+            // Optional: Play a short beep sound if you had an audio file
+            console.log("Security Check: Unauthorized Device.");
+        }, 7000);
+    </script>
+</body>
+</html>
