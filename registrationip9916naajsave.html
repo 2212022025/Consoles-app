@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SV-12 Pro Security</title>
+
+    <!-- PDF & QR Code Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;600&display=swap');
+
+        /* --- White & Black Theme Variables --- */
+        :root {
+            --bg-color: #ffffff;
+            --card-bg: #f8f9fa;
+            --border: #e0e0e0;
+            --primary: #000000;
+            --text-main: #111111;
+            --text-muted: #666666;
+            --danger: #ff4757;
+            --warning: #ffa502;
+            --success: #2ed573;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .active {
+            display: block;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 1. Three Dots Animation */
+        .dots-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .dot {
+            width: 15px;
+            height: 15px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); box-shadow: 0 0 15px rgba(0, 0, 0, 0.3); }
+        }
+
+        /* 2. Security Scanning Animation */
+        .scanner-box {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px auto;
+            border: 2px dashed var(--border);
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: #fafafa;
+        }
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary);
+            box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.2);
+            animation: scan 2s infinite linear;
+        }
+        @keyframes scan {
+            0% { top: -10%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 110%; opacity: 0; }
+        }
+
+        h2 { font-weight: 700; margin-bottom: 5px; font-size: 24px; color: var(--text-main); }
+        p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
+        /* --- Buttons & Cards --- */
+        .glass-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-align: left;
+        }
+        .glass-btn:hover {
+            border-color: var(--primary);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+        .btn-icon {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+        }
+        .btn-icon svg { width: 24px; height: 24px; fill: var(--primary); }
+        
+        .btn-text h3 { font-size: 15px; font-weight: 600; }
+        
+        .badge {
+            margin-top: 5px;
+            display: inline-block;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+        .badge-device { background: linear-gradient(45deg, #2ed573, #1e90ff); }
+        .badge-ura { background: linear-gradient(45deg, #ffa502, #ff4757); }
+
+        /* --- Forms --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group svg {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            fill: var(--text-muted);
+        }
+        input {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 15px 15px 15px 45px;
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            transition: border 0.3s;
+        }
+        input:focus { border-color: var(--primary); }
+        
+        .submit-btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .submit-btn:hover { box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2); }
+        .submit-btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+
+        .back-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            transition: 0.3s;
+        }
+        .back-btn svg { width: 16px; height: 16px; fill: var(--text-muted); transition: 0.3s; }
+        .back-btn:hover { color: var(--primary); }
+        .back-btn:hover svg { fill: var(--primary); }
+
+        .message-box {
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            min-height: 20px;
+        }
+
+        /* --- Terminal Animation --- */
+        .terminal-box {
+            background: #000000;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: hidden;
+            text-align: left;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #ffffff;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .terminal-line { margin-bottom: 5px; opacity: 0; animation: typeLine 0.1s forwards; }
+        @keyframes typeLine { to { opacity: 1; } }
+
+        /* --- Success Screen Styles --- */
+        .success-icon {
+            width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(46, 213, 115, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center;
+        }
+        .success-icon svg { width: 40px; height: 40px; fill: var(--success); }
+        .reg-code-box {
+            background: var(--card-bg); border: 2px dashed var(--primary); padding: 15px; border-radius: 10px; font-size: 20px; font-weight: 700; letter-spacing: 2px; color: var(--primary); margin: 20px 0;
+        }
+        .action-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .action-btns button {
+            flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 13px; transition: 0.3s;
+        }
+        .btn-copy { background: #e0e0e0; color: #111; }
+        .btn-copy:hover { background: #ccc; }
+        .btn-download { background: var(--primary); color: #fff; }
+        .btn-download:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .action-btns svg { width: 16px; height: 16px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <!-- SCREEN 1: One Moments -->
+    <div id="screen-loading" class="screen active">
+        <div class="dots-container">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <h2>One Moment</h2>
+    </div>
+
+    <!-- SCREEN 2: Security Scanning -->
+    <div id="screen-scanning" class="screen">
+        <div class="scanner-box">
+            <div class="scanner-line"></div>
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22ZM11 16L7 12L8.414 10.586L11 13.172L16.586 7.586L18 9L11 16Z" fill="var(--primary)"/>
+            </svg>
+        </div>
+        <h2>Security Scanning</h2>
+        <p style="color: var(--primary); font-weight: 600; letter-spacing: 2px;">SV-12 PRO</p>
+    </div>
+
+    <!-- SCREEN 3: Registration Selection -->
+    <div id="screen-main" class="screen">
+        <h2>Register Now</h2>
+        <p>Select your registration method below.</p>
+
+        <!-- Register with Device -->
+        <button class="glass-btn" onclick="showScreen('screen-device')">
+            <div class="btn-icon">
+                <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+            </div>
+            <div class="btn-text">
+                <h3>Register with Device</h3>
+                <div class="badge badge-device">Earn Between 100-1000 Rs</div>
+            </div>
+        </button>
+
+        <!-- Register with URA/CP -->
+        <button class="glass-btn" onclick="showScreen('screen-ura')">
+            <div class="btn-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div class="btn-text">
+                <h3>Register with URA/CP Accounts</h3>
+                <div class="badge badge-ura">2x Reward</div>
+            </div>
+        </button>
+    </div>
+
+    <!-- SCREEN 4: URA/CP Form -->
+    <div id="screen-ura" class="screen">
+        <h2>URA/CP Login</h2>
+        <p>Enter your assigned credentials</p>
+
+        <div class="input-group">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <input type="text" id="ura-username" placeholder="Username" autocomplete="off">
+        </div>
+
+        <button class="submit-btn" onclick="checkURA()">Verify Account</button>
+        <div id="ura-msg" class="message-box"></div>
+
+        <button class="back-btn" onclick="showScreen('screen-main')">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Go Back
+        </button>
+    </div>
+
+    <!-- SCREEN 5: Device Registration Form -->
+    <div id="screen-device" class="screen">
+        <h2>Device Registration</h2>
+        <p>Enter your details to claim 100-1000 Rs</p>
+
+        <div class="input-group">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <input type="text" id="dev-name" placeholder="Full Name" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+            <input type="email" id="dev-email" placeholder="Email Address" autocomplete="off">
+        </div>
+
+        <button id="dev-submit-btn" class="submit-btn" onclick="startDeviceRegistration()">Register Now</button>
+        <div id="dev-msg" class="message-box"></div>
+
+        <button class="back-btn" onclick="showScreen('screen-main')">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Go Back
+        </button>
+    </div>
+
+    <!-- SCREEN 6: Terminal Animation -->
+    <div id="screen-terminal" class="screen">
+        <h2>Registering...</h2>
+        <p>Please do not close this window</p>
+        <div id="terminal-box" class="terminal-box"></div>
+    </div>
+
+    <!-- SCREEN 7: Registration Success -->
+    <div id="screen-success" class="screen">
+        <div class="success-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h2 style="color: var(--success);">Registration Successful</h2>
+        <p style="margin-bottom: 5px;">We Will Notify You Once Event Started to Your E-mail Address</p>
+        
+        <div class="reg-code-box" id="final-reg-code">SV12-XXXXX</div>
+
+        <div class="action-btns">
+            <button class="btn-copy" onclick="copyCode()" id="copy-btn">
+                <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                <span id="copy-text">Copy Code</span>
+            </button>
+            <button class="btn-download" onclick="downloadId()">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Download Id
+            </button>
+        </div>
+    </div>
+
+    <!-- HIDDEN PDF TEMPLATE -->
+    <div style="position: absolute; top: -9999px; left: -9999px; width: 800px; z-index: -1;">
+        <div id="pdf-content" style="padding: 40px; background: #ffffff; color: #000000; font-family: 'Poppins', sans-serif; position: relative;">
+            <div style="border: 2px solid #000; padding: 40px; border-radius: 15px; position: relative; overflow: hidden;">
+                <!-- Decorative Element -->
+                <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: #000; border-radius: 50%; opacity: 0.05;"></div>
+                
+                <h1 style="text-align: center; margin-bottom: 5px; font-weight: 700; font-size: 32px; text-transform: uppercase; letter-spacing: 3px;">SV-12 Pro</h1>
+                <h2 style="text-align: center; font-weight: 400; font-size: 18px; color: #555; margin-bottom: 40px; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px;">Official Registration Card</h2>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1; padding-right: 20px;">
+                        <div style="margin-bottom: 20px;">
+                            <span style="color: #666; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Full Name</span><br>
+                            <strong style="font-size: 20px;" id="pdf-name"></strong>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <span style="color: #666; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Email Address</span><br>
+                            <strong style="font-size: 18px;" id="pdf-email"></strong>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <span style="color: #666; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">IP Address</span><br>
+                            <strong style="font-size: 16px;" id="pdf-ip"></strong>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <span style="color: #666; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Registration Date</span><br>
+                            <strong style="font-size: 16px;" id="pdf-date"></strong>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; padding: 25px; border-radius: 12px; border: 1px dashed #ccc;">
+                        <div id="pdf-qrcode" style="margin-bottom: 20px; background: #fff; padding: 10px; border-radius: 8px;"></div>
+                        <div style="font-family: 'Fira Code', monospace; font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #000;" id="pdf-code-text"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 40px; font-size: 11px; color: #888; border-top: 1px solid #f0f0f0; padding-top: 20px; line-height: 1.5;">
+                    <strong>System Info:</strong> <span id="pdf-ua"></span>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center; font-weight: 700; font-size: 16px; letter-spacing: 4px; color: #000;">
+                    POWERED BY VLF-TEC
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase & Logic Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, get, set, child } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJ0PpBeIIYfr0SfVfP6qMaaT4YW7rLG4M",
+            authDomain: "ura-trade.firebaseapp.com",
+            databaseURL: "https://ura-trade-default-rtdb.firebaseio.com",
+            projectId: "ura-trade",
+            storageBucket: "ura-trade.firebasestorage.app",
+            messagingSenderId: "302606112899",
+            appId: "1:302606112899:web:f3ef78c7c1a850ab29a3b6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Global Variables
+        let currentRegCode = "";
+        let currentUserData = {};
+
+        // Expose utility functions to Window for inline HTML onclicks
+        window.showScreen = function(screenId) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            // Clear messages
+            if(document.getElementById('ura-msg')) document.getElementById('ura-msg').innerText = '';
+            if(document.getElementById('dev-msg')) document.getElementById('dev-msg').innerText = '';
+        }
+
+        window.checkURA = function() {
+            const username = document.getElementById('ura-username').value.trim();
+            const msgBox = document.getElementById('ura-msg');
+
+            if (username === 'ayush@558' || username === 'saumy') {
+                msgBox.innerText = "Failed, This Account Is Suspended";
+                msgBox.style.color = "var(--danger)";
+            } 
+            else if (username === 'arman@45' || username === 'aysuh@559' || username === 'ayush@559') {
+                msgBox.innerText = "This account is No Longer Available";
+                msgBox.style.color = "var(--warning)";
+            } 
+            else if (username === "") {
+                msgBox.innerText = "Please enter a username";
+                msgBox.style.color = "var(--text-muted)";
+            }
+            else {
+                msgBox.innerText = "Incorrect Username";
+                msgBox.style.color = "var(--danger)";
+            }
+        }
+
+        window.startDeviceRegistration = async function() {
+            const name = document.getElementById('dev-name').value.trim();
+            const email = document.getElementById('dev-email').value.trim();
+            const msgBox = document.getElementById('dev-msg');
+            const btn = document.getElementById('dev-submit-btn');
+
+            if (name === "" || email === "") {
+                msgBox.innerText = "Please fill out all fields.";
+                msgBox.style.color = "var(--warning)";
+                return;
+            }
+
+            // --- Registration Deadline Logic ---
+            // Registration Closed after 11 April 11:50 am
+            const deadline = new Date("April 11, 2026 11:50:00"); 
+            const now = new Date();
+            
+            if (now > deadline) {
+                msgBox.innerText = "Registration Closed. The deadline has passed.";
+                msgBox.style.color = "var(--danger)";
+                return;
+            }
+
+            // Check Local Storage (Only Single Time Registration)
+            if (localStorage.getItem("sv12_registered")) {
+                msgBox.innerText = "Device already registered.";
+                msgBox.style.color = "var(--danger)";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Verifying...";
+            msgBox.innerText = "";
+
+            try {
+                // Fetch IP Address
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                const ipAddress = ipData.ip;
+                const userAgent = navigator.userAgent;
+                
+                // Generate Registration Code
+                currentRegCode = "SV12-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+                currentUserData = {
+                    name: name,
+                    email: email,
+                    ip: ipAddress,
+                    userAgent: userAgent,
+                    registrationCode: currentRegCode,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Check Firebase Seats Count
+                const regRef = ref(db, 'registration');
+                const snapshot = await get(regRef);
+                
+                let seatsData = snapshot.exists() ? snapshot.val() : {};
+                let currentSeatCount = Object.keys(seatsData).length;
+
+                if (currentSeatCount >= 4) {
+                    msgBox.innerText = "No More Seat Available";
+                    msgBox.style.color = "var(--danger)";
+                    btn.disabled = false;
+                    btn.innerText = "Register Now";
+                    return;
+                }
+
+                const nextSeat = `seat${currentSeatCount + 1}`;
+                
+                // Proceed to Terminal Animation
+                window.showScreen('screen-terminal');
+                runTerminalAnimation(nextSeat);
+
+            } catch (error) {
+                msgBox.innerText = "Network Error. Please try again.";
+                msgBox.style.color = "var(--danger)";
+                btn.disabled = false;
+                btn.innerText = "Register Now";
+                console.error(error);
+            }
+        }
+
+        function runTerminalAnimation(seatName) {
+            const terminal = document.getElementById('terminal-box');
+            terminal.innerHTML = "";
+            
+            const lines = [
+                "Initializing secure connection to SV-12 Server...",
+                "standard routing protocols...",
+                `Targeting open slot: ${seatName.toUpperCase()}...`,
+                "Fetching Client IP address signature...",
+                "Validating User-Agent metrics...",
+                "Server Response: ACK_RECEIVED",
+                "Encrypting User Payload data...",
+                `Generating Unique ID: ${currentRegCode}...`,
+                "Writing configuration to Firebase Database...",
+                "Server Response: 200 OK",
+                "Finalizing registration status...",
+                "Operation Complete. Redirecting..."
+            ];
+
+            // 15 Seconds Total = 15000 ms. We have 12 lines. ~1250ms per line
+            let delay = 0;
+            lines.forEach((line, index) => {
+                setTimeout(() => {
+                    const p = document.createElement('div');
+                    p.className = 'terminal-line';
+                    p.innerText = `> ${line}`;
+                    terminal.appendChild(p);
+                    terminal.scrollTop = terminal.scrollHeight; // Auto-scroll
+                }, delay);
+                delay += 1250;
+            });
+
+            // Finish after 15 seconds
+            setTimeout(async () => {
+                try {
+                    // Save to Firebase Database
+                    await set(ref(db, `registration/${seatName}`), currentUserData);
+                    
+                    // Save to Local Storage
+                    localStorage.setItem("sv12_registered", "true");
+                    localStorage.setItem("sv12_code", currentRegCode);
+                    localStorage.setItem("sv12_details", JSON.stringify(currentUserData));
+
+                    // Show Success
+                    document.getElementById('final-reg-code').innerText = currentRegCode;
+                    window.showScreen('screen-success');
+
+                } catch (error) {
+                    alert("Database Error: Could not finalize registration.");
+                    window.showScreen('screen-device');
+                }
+            }, 15000);
+        }
+
+        // Action Buttons
+        window.copyCode = function() {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(currentRegCode).then(() => {
+                    document.getElementById("copy-text").innerText = "Copied!";
+                    setTimeout(() => {
+                        document.getElementById("copy-text").innerText = "Copy Code";
+                    }, 2000);
+                });
+            } else {
+                // Fallback for older browsers
+                let textArea = document.createElement("textarea");
+                textArea.value = currentRegCode;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.getElementById("copy-text").innerText = "Copied!";
+                    setTimeout(() => {
+                        document.getElementById("copy-text").innerText = "Copy Code";
+                    }, 2000);
+                } catch (err) {
+                    alert("Registration Code: " + currentRegCode);
+                }
+                textArea.remove();
+            }
+        }
+
+        window.downloadId = function() {
+            // Populate PDF Template Data
+            document.getElementById('pdf-name').innerText = currentUserData.name;
+            document.getElementById('pdf-email').innerText = currentUserData.email;
+            document.getElementById('pdf-ip').innerText = currentUserData.ip;
+            document.getElementById('pdf-date').innerText = new Date(currentUserData.timestamp).toLocaleString();
+            document.getElementById('pdf-ua').innerText = currentUserData.userAgent;
+            document.getElementById('pdf-code-text').innerText = currentUserData.registrationCode;
+
+            // Generate QR Code inside Template
+            const qrContainer = document.getElementById('pdf-qrcode');
+            qrContainer.innerHTML = ""; // Clear existing
+            new QRCode(qrContainer, {
+                text: currentUserData.registrationCode,
+                width: 120,
+                height: 120,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // Convert to PDF after slight delay to allow QR Code rendering
+            setTimeout(() => {
+                const element = document.getElementById('pdf-content');
+                const opt = {
+                    margin:       0,
+                    filename:     currentUserData.registrationCode + '_ID.pdf',
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+                
+                html2pdf().set(opt).from(element).save();
+            }, 300);
+        }
+
+        // Initial Boot Sequence
+        window.onload = () => {
+            setTimeout(() => {
+                window.showScreen('screen-scanning');
+                setTimeout(() => {
+                    window.showScreen('screen-main');
+                }, 5000);
+            }, 2000);
+        };
+    </script>
+</body>
+</html>
