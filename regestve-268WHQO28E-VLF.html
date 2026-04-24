@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SV-12 Elite Portal</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Color Palette & Variables */
+        :root {
+            --blue: #0056b3;
+            --light-blue: #e6f0fa;
+            --white: #ffffff;
+            --green: #28a745;
+            --red: #dc3545;
+            --dark-red: #8b0000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--light-blue);
+            color: var(--blue);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            padding: 20px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .active {
+            display: flex;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Bigger, Below-Text Three Dot Animation */
+        .dots {
+            display: block; 
+            font-size: 70px; 
+            line-height: 0.3; 
+            margin-top: 15px;
+            letter-spacing: 5px; 
+            color: inherit; 
+        }
+
+        .dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+            100% { content: ''; }
+        }
+
+        /* Typography & Icons */
+        h2 {
+            font-size: 28px;
+            font-weight: 700; 
+            margin: 15px 0;
+        }
+        
+        h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 15px 0;
+        }
+        
+        .icon-large {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .text-blue { color: var(--blue); }
+        .text-green { color: var(--green); }
+        .text-red { color: var(--red); }
+        .text-white { color: var(--white); }
+
+        /* Main Menu Buttons */
+        .card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 86, 179, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--white);
+        }
+
+        .btn-blue {
+            background-color: var(--blue);
+            box-shadow: 0 4px 15px rgba(0, 86, 179, 0.4);
+        }
+        .btn-blue:hover { background-color: #004494; }
+
+        .btn-green {
+            background-color: var(--green);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+        .btn-green:hover { background-color: #218838; }
+
+        /* Login Modal */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 86, 179, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid var(--blue);
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            outline: none;
+        }
+        .error-msg {
+            color: var(--red);
+            font-weight: 600;
+            margin-top: 10px;
+            min-height: 24px;
+        }
+
+        /* Cheat Detected & Suspended Screens */
+        .bg-red-screen {
+            background-color: var(--dark-red);
+            color: var(--white);
+        }
+        .brush-text {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 45px;
+            color: var(--white);
+            background: var(--red);
+            padding: 10px 20px;
+            transform: rotate(-3deg);
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            letter-spacing: 2px;
+        }
+        .final-message-box {
+            background: var(--white);
+            color: var(--red);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 8px solid var(--red);
+            text-align: left;
+            margin-top: 20px;
+            font-weight: 600;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--blue);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Offline Stage -->
+    <div id="stage-offline" class="screen">
+        <i class="fas fa-wifi-slash icon-large text-red"></i>
+        <h2 class="text-red">🔴𝙵𝚊𝚒𝚕𝚎𝚍:- 𝙽𝚘 𝙸𝚗𝚝𝚎𝚛𝚗𝚎𝚝 𝙲𝚘𝚗𝚗𝚎𝚌𝚝𝚒𝚘𝚗  </h2>
+    </div>
+
+    <!-- Suspended Stage -->
+    <div id="stage-suspended" class="screen bg-red-screen">
+        <i class="fas fa-ban icon-large text-white"></i>
+        <h2 class="text-white">𝚃𝚑𝚒𝚜 𝚄𝚁𝙻 𝚑𝚊𝚜 𝚋𝚎𝚎𝚗 𝚜𝚞𝚜𝚙𝚎𝚗𝚍𝚎𝚍 𝚍𝚞𝚎 𝚝𝚘 𝚘𝚞𝚛 𝚃𝚎𝚛𝚖𝚜 & 𝙲𝚘𝚗𝚍𝚒𝚝𝚒𝚘𝚗𝚜</h2>
+    </div>
+
+    <!-- Stage 1: Loading & Verifying -->
+    <div id="stage-loading" class="screen active">
+        <i id="loading-icon" class="fas fa-satellite-dish fa-pulse icon-large text-blue"></i>
+        <h2 id="loading-text" class="text-blue">𝚆𝚊𝚒𝚝 𝙰 𝙼𝚘𝚖𝚎𝚗𝚝 <span class="dots"></span></h2>
+    </div>
+
+    <!-- Stage 2: Main Registration Page -->
+    <div id="stage-main" class="screen">
+        <div class="card">
+            <i class="fas fa-users-cog icon-large text-blue"></i>
+            <h2 class="text-blue mb-4">Event Registration</h2>
+            
+            <button class="btn btn-blue" onclick="openLoginModal()">
+                <i class="fas fa-user-circle"></i> 𝚁𝚎𝚐𝚒𝚜𝚝𝚎𝚛𝚎𝚍 𝚆𝚒𝚝𝚑 𝚄𝚁𝙰/𝙲𝙿 𝙰𝚌𝚌𝚘𝚞𝚗𝚝
+            </button>
+            
+            <button class="btn btn-green" onclick="startDeviceScan()">
+                <i class="fas fa-mobile-alt"></i> 𝚁𝚎𝚐𝚒𝚜𝚝𝚎𝚛 𝚆𝚒𝚝𝚑 𝙳𝚎𝚟𝚒𝚌𝚎
+            </button>
+        </div>
+        <div class="footer">
+            <i class="fas fa-bolt text-green"></i> 𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝙱𝚢 𝚂𝚅-12 𝙴𝚕𝚒𝚝𝚎
+        </div>
+    </div>
+
+    <!-- Login Modal for URA Account -->
+    <div id="login-modal" class="modal-bg">
+        <div class="modal-content">
+            <i class="fas fa-lock icon-large text-blue"></i>
+            <h3 class="text-blue">𝙻𝚘𝚐𝚒𝚗</h3>
+            <input type="text" id="username" placeholder="Enter Username">
+            <button class="btn btn-blue" onclick="checkLogin()">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            <button class="btn" style="background:var(--white); color:var(--red); border:1px solid var(--red);" onclick="closeLoginModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <div id="login-error" class="error-msg"></div>
+        </div>
+    </div>
+
+    <!-- Stage 3: Security Scanning -->
+    <div id="stage-scanning" class="screen">
+        <i class="fas fa-shield-alt fa-pulse icon-large text-green" style="font-size: 80px;"></i>
+        <h2 class="text-green">𝚂𝚎𝚌𝚞𝚛𝚒𝚝𝚢 𝚂𝚌𝚊𝚗𝚗𝚒𝚗𝚐<span class="dots"></span></h2>
+        <div class="footer">
+            <i class="fas fa-bolt text-green"></i> 𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝙱𝚢 𝚂𝚅-12 𝙴𝚕𝚒𝚝𝚎
+        </div>
+    </div>
+
+    <!-- Stage 4: Cheat Detected & Final Message -->
+    <div id="stage-banned" class="screen bg-red-screen">
+        <div class="brush-text">
+            <i class="fas fa-skull-crossbones"></i> CHEAT DETECTED
+        </div>
+        
+        <h3 id="redirect-text" style="margin-top: 30px;">𝚁𝚎𝚍𝚒𝚛𝚎𝚌𝚝𝚒𝚗𝚐 𝙴𝚡𝚝𝚎𝚛𝚗𝚊𝚕 𝚂𝚒𝚝𝚎<span class="dots"></span></h3>
+        
+        <div id="final-message" class="final-message-box" style="display: none;">
+            <p><i class="fas fa-exclamation-triangle"></i>𝙳𝚎𝚊𝚛 𝚄𝚜𝚎𝚛,</p>
+            <p style="margin-top: 10px;">𝚈𝚘𝚞𝚛 𝚍𝚎𝚟𝚒𝚌𝚎 𝚒𝚜 𝚊𝚜𝚜𝚘𝚌𝚒𝚊𝚝𝚎𝚍 𝚠𝚒𝚝𝚑 𝚊 𝚋𝚊𝚗𝚗𝚎𝚍 𝚊𝚌𝚌𝚘𝚞𝚗𝚝; 𝚝𝚑𝚎𝚛𝚎𝚏𝚘𝚛𝚎, 𝚢𝚘𝚞 𝚌𝚊𝚗𝚗𝚘𝚝 𝚛𝚎𝚐𝚒𝚜𝚝𝚎𝚛 𝚏𝚘𝚛 𝚝𝚑𝚒𝚜 𝚎𝚟𝚎𝚗𝚝. .</p>
+            <p style="margin-top: 10px;">𝙰𝚌𝚌𝚎𝚜𝚜 𝚝𝚘 𝚝𝚑𝚒𝚜 𝚄𝚁𝙻 𝚑𝚊𝚜 𝚋𝚎𝚎𝚗 𝚛𝚎𝚜𝚝𝚛𝚒𝚌𝚝𝚎𝚍 𝚏𝚘𝚛 𝚢𝚘𝚞𝚛 𝚍𝚎𝚟𝚒𝚌𝚎. 𝚃𝚑𝚒𝚜 𝚕𝚒𝚗𝚔 𝚌𝚊𝚗𝚗𝚘𝚝 𝚋𝚎 𝚜𝚑𝚊𝚛𝚎𝚍 𝚘𝚛 𝚞𝚜𝚎𝚍 𝚘𝚗 𝚢𝚘𝚞𝚛 𝚘𝚝𝚑𝚎𝚛 𝚍𝚎𝚟𝚒𝚌𝚎𝚜.</p>
+            <hr style="border-color: var(--red); margin: 15px 0; opacity: 0.3;">
+            <p style="color: var(--green);"><i class="fas fa-info-circle"></i>𝙽𝚘𝚝𝚎:- 𝙾𝚝𝚑𝚎𝚛 𝚄𝚜𝚎𝚛𝚜 𝙲𝚊𝚗 𝙴𝚊𝚜𝚒𝚕𝚢 𝚁𝚎𝚐𝚒𝚜𝚝𝚎𝚛 𝚃𝚑𝚒𝚜 𝙴𝚟𝚎𝚗𝚝. </p>
+        </div>
+    </div>
+
+    <!-- Firebase Integration and Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3_lq8-mVSgD79GtDuUIvgDzTvyfKM_tQ",
+            authDomain: "utkarshai-chat-4-6248744-993e0.firebaseapp.com",
+            databaseURL: "https://utkarshai-chat-4-6248744-993e0-default-rtdb.firebaseio.com",
+            projectId: "utkarshai-chat-4-6248744-993e0",
+            storageBucket: "utkarshai-chat-4-6248744-993e0.firebasestorage.app",
+            messagingSenderId: "461808476700",
+            appId: "1:461808476700:web:658d7b9db3c2ca5d9135d9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Utility to switch globally and handle Body backgrounds
+        function forceScreen(showId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(showId).classList.add('active');
+            
+            // Adjust background for red screens vs normal screens
+            if (showId === 'stage-suspended' || showId === 'stage-banned') {
+                document.body.style.backgroundColor = 'var(--dark-red)';
+            } else {
+                document.body.style.backgroundColor = 'var(--light-blue)';
+            }
+        }
+
+        // --- Connection/Offline Logic ---
+        window.addEventListener('offline', () => forceScreen('stage-offline'));
+        window.addEventListener('online', () => location.reload());
+
+        // --- Initial Loading Logic ---
+        window.onload = async () => {
+            if (!navigator.onLine) {
+                forceScreen('stage-offline');
+                return;
+            }
+
+            try {
+                // Check Firebase if URL is already suspended
+                const snapshot = await get(ref(db, 'status/siteExpired'));
+                if (snapshot.exists() && snapshot.val() === true) {
+                    forceScreen('stage-suspended');
+                    return;
+                }
+            } catch (error) {
+                console.error("Firebase Read Error:", error);
+            }
+
+            // Normal Flow (If not suspended)
+            setTimeout(() => {
+                document.getElementById('loading-icon').className = 'fas fa-server icon-large text-blue';
+                document.getElementById('loading-text').innerHTML = '𝚅𝚎𝚛𝚒𝚏𝚢𝚒𝚗𝚐 𝚄𝚁𝙻<span class="dots"></span>';
+                
+                setTimeout(() => {
+                    forceScreen('stage-main');
+                }, 5000);
+
+            }, 2000); 
+        };
+
+        // --- URA Login Modal Logic ---
+        window.openLoginModal = function() {
+            if (!navigator.onLine) { forceScreen('stage-offline'); return; }
+            document.getElementById('login-modal').style.display = 'flex';
+            document.getElementById('login-error').innerText = '';
+            document.getElementById('username').value = '';
+        }
+
+        window.closeLoginModal = function() {
+            document.getElementById('login-modal').style.display = 'none';
+        }
+
+        window.checkLogin = function() {
+            if (!navigator.onLine) { forceScreen('stage-offline'); return; }
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const errorDiv = document.getElementById('login-error');
+
+            if (username === 'ayush@558' || username === 'saumy') {
+                errorDiv.innerHTML = '<i class="fas fa-ban"></i> This Account is Banned';
+            } else if (username === '') {
+                errorDiv.innerHTML = '<i class="fas fa-exclamation"></i> Please enter a username';
+            } else {
+                errorDiv.innerHTML = '<i class="fas fa-user-slash"></i> This Account May Be Deleted or Wrong Username';
+            }
+        }
+
+        // --- Device Scan & Cheat Detect Logic ---
+        window.startDeviceScan = function() {
+            if (!navigator.onLine) { forceScreen('stage-offline'); return; }
+            
+            forceScreen('stage-scanning');
+
+            setTimeout(() => {
+                // Quickly Save Expired to Firebase
+                set(ref(db, 'status/siteExpired'), true).catch(err => console.error("Firebase Write Error:", err));
+
+                forceScreen('stage-banned');
+
+                setTimeout(() => {
+                    document.getElementById('redirect-text').style.display = 'none';
+                    document.getElementById('final-message').style.display = 'block';
+                }, 5000);
+
+            }, 6000);
+        }
+    </script>
+</body>
+</html>
