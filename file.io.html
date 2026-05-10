@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File.io - Secure Cloud Sharing</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #2e7bff;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Header */
+        header {
+            width: 100%;
+            padding: 25px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: var(--primary);
+            text-transform: lowercase;
+        }
+
+        .logo span { color: var(--text); }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        /* Branding on First Page */
+        .vlf-branding {
+            margin-top: 25px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        /* Input Box */
+        .input-group {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        input {
+            background: #0f172a;
+            border: 2px solid #334155;
+            padding: 18px;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+        }
+
+        /* Redirecting */
+        #redirect-box { display: none; }
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Final Screen */
+        #final-screen { display: none; }
+        .download-btn { background: #10b981; margin-bottom: 15px; }
+        .watch-btn { background: #ef4444; }
+
+        /* --- VIDEO PLAYER OVERLAY --- */
+        #video-page {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+
+        video { width: 100%; height: 100%; cursor: pointer; }
+
+        /* Center Tap Icon */
+        #center-icon-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.5);
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 5;
+        }
+        #center-icon-overlay i { color: white; font-size: 2.5rem; }
+        .animate-icon { opacity: 1 !important; transform: translate(-50%, -50%) scale(1.2) !important; }
+
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            padding: 15px 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 6;
+        }
+
+        .video-container:hover .player-controls { opacity: 1; }
+
+        .timeline-box {
+            width: 100%;
+            height: 5px;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .timeline-inner { height: 100%; background: #ff0000; width: 0%; }
+
+        .ctrl-btns {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .ctrl-btns i { cursor: pointer; }
+
+        .close-video {
+            position: absolute;
+            top: 20px; right: 20px;
+            color: white; font-size: 2rem; cursor: pointer;
+            z-index: 101;
+        }
+
+        #replay-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center; align-items: center;
+            flex-direction: column; z-index: 10;
+        }
+
+        .replay-btn {
+            font-size: 3rem; color: white; cursor: pointer;
+            background: var(--primary); width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">file.<span>io</span></div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <!-- Step 1 -->
+            <div id="step-1">
+                <button class="btn" onclick="showLogin()">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝙼𝚘𝚍
+                </button>
+                <div class="vlf-branding">Powered By VLF-TEC</div>
+            </div>
+
+            <!-- Step 2 -->
+            <div id="step-2" class="input-group">
+                <h3 style="font-weight: 700; margin-bottom:10px;">𝙿𝚊𝚜𝚜𝚠𝚘𝚛𝚍 𝙿𝚛𝚘𝚝𝚎𝚌𝚝𝚎𝚍 𝙵𝚒𝚕𝚎  (𝙴𝚗𝚝𝚎𝚛 𝚄𝚜𝚎𝚗𝚊𝚖𝚎) </h3>
+                <input type="text" id="username" autocomplete="off" spellcheck="false">
+                <button class="btn" onclick="validate()">
+                    Continue <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <p id="error-msg" style="color: #f87171; font-size: 0.9rem; display: none;"> 𝙸𝚗𝚟𝚊𝚕𝚒𝚍 𝚄𝚜𝚎𝚛𝚗𝚊𝚖𝚎</p>
+            </div>
+
+            <!-- Step 3 -->
+            <div id="redirect-box">
+                <div class="loader"></div>
+                <h3>REDIRECTING</h3>
+            </div>
+
+            <!-- Step 4 -->
+            <div id="final-screen">
+                <h2 style="margin-bottom: 25px;">𝙵𝚒𝚕𝚎 𝚂𝚢𝚜𝚝𝚎𝚖</h2>
+                <a href="https://www.mediafire.com/file/cokmediik9flviy/Mods.zip/file" target="_blank" class="btn download-btn">
+                    <i class="fa-solid fa-file-zipper"></i> Install FF MAX Panel
+                </a>
+                <button class="btn watch-btn" onclick="openVideoPlayer()">
+                    <i class="fa-solid fa-play"></i> Watch Setup Video
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO PLAYER OVERLAY -->
+    <div id="video-page">
+        <i class="fa-solid fa-xmark close-video" onclick="closeVideoPlayer()"></i>
+        
+        <div class="video-container" id="vContainer">
+            <!-- Center Icon Feedback -->
+            <div id="center-icon-overlay">
+                <i id="center-icon" class="fa-solid fa-pause"></i>
+            </div>
+
+            <video id="mainVideo" onclick="togglePlay()">
+                <source src="https://files.catbox.moe/vs1s64.mp4" type="video/mp4">
+            </video>
+
+            <div id="replay-screen">
+                <div class="replay-btn" onclick="restartVideo()">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="player-controls">
+                <div class="timeline-box" id="timelineBox">
+                    <div class="timeline-inner" id="progress"></div>
+                </div>
+                
+                <div class="ctrl-btns">
+                    <i class="fa-solid fa-play" id="playPauseBtn" onclick="togglePlay()"></i>
+                    <i class="fa-solid fa-backward" title="-19s" onclick="skip(-19)"></i>
+                    <i class="fa-solid fa-forward" title="+10s" onclick="skip(10)"></i>
+                    <span id="vTime" style="font-size: 0.9rem;">00:00 / 00:00</span>
+                    <i class="fa-solid fa-expand" style="margin-left:auto" onclick="toggleFullscreen()"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const pass = "Ayush@X.4141";
+
+        function showLogin() {
+            document.getElementById('step-1').classList.add('hidden');
+            document.getElementById('step-2').style.display = 'flex';
+        }
+
+        function validate() {
+            const val = document.getElementById('username').value;
+            if(val === pass) {
+                document.getElementById('step-2').style.display = 'none';
+                document.getElementById('redirect-box').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('redirect-box').style.display = 'none';
+                    document.getElementById('final-screen').style.display = 'block';
+                }, 2000);
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        const video = document.getElementById('mainVideo');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const progress = document.getElementById('progress');
+        const timelineBox = document.getElementById('timelineBox');
+        const replayScreen = document.getElementById('replay-screen');
+        const vTime = document.getElementById('vTime');
+        const vContainer = document.getElementById('vContainer');
+        const centerOverlay = document.getElementById('center-icon-overlay');
+        const centerIcon = document.getElementById('center-icon');
+
+        function openVideoPlayer() {
+            document.getElementById('video-page').style.display = 'flex';
+            video.play();
+            playPauseBtn.className = "fa-solid fa-pause";
+        }
+
+        function closeVideoPlayer() {
+            video.pause();
+            document.getElementById('video-page').style.display = 'none';
+        }
+
+        function togglePlay() {
+            // Show center icon feedback
+            centerOverlay.classList.remove('animate-icon');
+            void centerOverlay.offsetWidth; // Trigger reflow
+            
+            if (video.paused) {
+                video.play();
+                playPauseBtn.className = "fa-solid fa-pause";
+                centerIcon.className = "fa-solid fa-play";
+            } else {
+                video.pause();
+                playPauseBtn.className = "fa-solid fa-play";
+                centerIcon.className = "fa-solid fa-pause";
+            }
+
+            centerOverlay.classList.add('animate-icon');
+            setTimeout(() => {
+                centerOverlay.classList.remove('animate-icon');
+            }, 500);
+        }
+
+        function skip(amt) {
+            video.currentTime += amt;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                vContainer.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function restartVideo() {
+            replayScreen.style.display = 'none';
+            video.currentTime = 0;
+            video.play();
+            playPauseBtn.className = "fa-solid fa-pause";
+        }
+
+        video.addEventListener('timeupdate', () => {
+            const per = (video.currentTime / video.duration) * 100;
+            progress.style.width = per + '%';
+            vTime.innerText = `${format(video.currentTime)} / ${format(video.duration)}`;
+        });
+
+        video.addEventListener('ended', () => {
+            replayScreen.style.display = 'flex';
+            playPauseBtn.className = "fa-solid fa-play";
+        });
+
+        timelineBox.addEventListener('click', (e) => {
+            const rect = timelineBox.getBoundingClientRect();
+            const pos = (e.pageX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        });
+
+        function format(s) {
+            if(isNaN(s)) return "00:00";
+            let m = Math.floor(s / 60);
+            let sec = Math.floor(s % 60);
+            return (m < 10 ? '0'+m : m) + ":" + (sec < 10 ? '0'+sec : sec);
+        }
+    </script>
+</body>
+</html>
