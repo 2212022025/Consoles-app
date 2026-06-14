@@ -1,0 +1,368 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRS Rating Hub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --accent: #d946ef;
+            --bg: #030712;
+            --card: rgba(17, 24, 39, 0.9);
+            --danger: #ff4d4d;
+            --success: #00ff88;
+        }
+
+        body {
+            /* Applied requested background image and font */
+            font-family: 'Courier New', Courier, monospace; 
+            background: url('https://files.catbox.moe/d9bnza.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 420px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 { font-weight: 900; font-size: 2rem; margin-bottom: 5px; background: linear-gradient(to right, #8b5cf6, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p.subtitle { color: #d1d5db; font-size: 0.9rem; margin-bottom: 30px; }
+
+        .input-box {
+            background: #1f2937;
+            border: 2px solid #374151;
+            padding: 15px;
+            border-radius: 15px;
+            width: 100%;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        .input-box:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-check {
+            width: 100%;
+            padding: 15px;
+            border-radius: 15px;
+            border: none;
+            background: #6d28d9;
+            color: white;
+            font-weight: 900;
+            font-family: inherit;
+            font-size: 1.1rem;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 6px 0 #4c1d95;
+            transition: all 0.1s;
+            transform: translateY(-3px);
+        }
+
+        .btn-check:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #4c1d95;
+        }
+
+        #loader {
+            display: none;
+            padding: 40px 0;
+        }
+
+        .gear-wrapper {
+            font-size: 4rem;
+            animation: spin 2s linear infinite;
+            background: linear-gradient(to bottom, #8b5cf6, #d946ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .dot-loader {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .dot {
+            width: 10px; height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: bounce 1.2s infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); opacity: 0.5; } }
+
+        #result-screen { display: none; padding-top: 20px; animation: fadeInUp 0.5s ease forwards; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .score-circle {
+            font-size: 5rem;
+            font-weight: 900;
+            margin: 10px 0;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+
+        .warning-box {
+            color: var(--danger);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        /* Better Styling for Deductions */
+        .deductions {
+            font-size: 0.9rem;
+            text-align: left;
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+
+        .deduction-item {
+            color: var(--danger);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .deduction-item i {
+            width: 20px;
+            margin-right: 8px;
+        }
+
+        .success-msg {
+            color: var(--success);
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="search-screen">
+            <h1>FRS Checker</h1>
+            <p class="subtitle">Enter Your ChatName or Username to Check rating.</p>
+            <input type="text" id="userInput" class="input-box" placeholder="e.g. Username">
+            <button class="btn-check" onclick="startCheck()">VIEW RATING</button>
+        </div>
+
+        <div id="loader">
+            <div class="gear-wrapper"><i class="fa-solid fa-gear"></i></div>
+            <div class="dot-loader">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <p style="margin-top: 20px; font-weight: 600;">Scanning...</p>
+        </div>
+
+        <div id="result-screen">
+            <div id="alert-icon"></div>
+            <div id="badge-area"></div>
+            <div class="score-circle" id="final-score">0</div>
+            <div class="deductions" id="reason-list"></div>
+            <button class="btn-check" style="margin-top: 25px; padding: 10px;" onclick="location.reload()">NEW SEARCH</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp5fG4-8NkSSP1S6ND6vSk8HeZRXrXz7M",
+            authDomain: "splash-cc98f.firebaseapp.com",
+            databaseURL: "https://splash-cc98f-default-rtdb.firebaseio.com",
+            projectId: "splash-cc98f",
+            storageBucket: "splash-cc98f.firebasestorage.app",
+            messagingSenderId: "526650808551",
+            appId: "1:526650808551:web:af7818987af38b946d2a42"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.startCheck = async function() {
+            const val = document.getElementById('userInput').value.trim();
+            if(!val) return;
+
+            document.getElementById('search-screen').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+
+            const startTime = Date.now();
+
+            try {
+                const snapshot = await get(ref(db));
+                const elapsedTime = Date.now() - startTime;
+                const remainingTime = Math.max(0, 3000 - elapsedTime);
+
+                setTimeout(() => {
+                    if(snapshot.exists()) {
+                        calculateFRS(snapshot.val(), val);
+                    }
+                }, remainingTime);
+
+            } catch(e) {
+                alert("Error connecting to Firebase");
+                location.reload();
+            }
+        }
+
+        function calculateFRS(data, input) {
+            const users = data.users || {};
+            let targetChatName = null;
+            let targetUserData = null;
+
+            if(users[input]) {
+                targetChatName = input;
+                targetUserData = users[input];
+            } else {
+                for(let cName in users) {
+                    if(users[cName].username === input) {
+                        targetChatName = cName;
+                        targetUserData = users[cName];
+                        break;
+                    }
+                }
+            }
+
+            if(!targetChatName) {
+                alert("Account Not Found! Try another username.");
+                location.reload();
+                return;
+            }
+
+            let score = 10;
+            let logs = [];
+            const now = Date.now();
+            const threeDays = 3 * 24 * 60 * 60 * 1000;
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+            // 1. Trading Account Check
+            if(!data.bitcoin_users || !data.bitcoin_users[targetChatName]) {
+                score -= 1;
+                logs.push({ icon: 'fa-bitcoin-sign', label: 'No Trading Account', pts: -1 });
+            }
+
+            // 2. Social Activity Check
+            const allPosts = Object.values(data.social_posts || {});
+            const userPosts = allPosts.filter(p => p.chatName === targetChatName);
+            
+            if(userPosts.length === 0) {
+                score -= 4;
+                logs.push({ icon: 'fa-share-nodes', label: 'Social Splash (No Post)', pts: -4 });
+            } else {
+                const lastPostTime = Math.max(...userPosts.map(p => p.timestamp));
+                const timeDiff = now - lastPostTime;
+                
+                if(timeDiff > sevenDays) {
+                    score -= 4;
+                    logs.push({ icon: 'fa-clock', label: 'Social Splash (Inactive > 7 Days)', pts: -4 });
+                } else if(timeDiff > threeDays) {
+                    score -= 3;
+                    logs.push({ icon: 'fa-clock', label: 'Social Splash (Inactive)', pts: -3 });
+                }
+            }
+
+            // 3. Chat / Last Activity Check
+            const allChats = Object.values(data.public_chat || {});
+            const userChats = allChats.filter(c => c.chatName === targetChatName);
+            const lastChatTime = userChats.length > 0 ? Math.max(...userChats.map(c => c.timestamp)) : 0;
+
+            if(lastChatTime === 0 || (now - lastChatTime) > threeDays) {
+                score -= 3;
+                logs.push({ icon: 'fa-comment-dots', label: 'Chat Activity (Inactive)', pts: -3 });
+            }
+
+            score = Math.max(0, score);
+            renderUI(score, logs);
+        }
+
+        function renderUI(score, logs) {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'block';
+            
+            const scoreEl = document.getElementById('final-score');
+            const badgeArea = document.getElementById('badge-area');
+            const alertArea = document.getElementById('alert-icon');
+            const reasonArea = document.getElementById('reason-list');
+
+            scoreEl.innerText = score;
+
+            let reasonContent = "";
+            if (logs.length > 0) {
+                reasonContent = logs.map(log => `
+                    <span class="deduction-item">
+                        • <i class="fa-solid ${log.icon}"></i> ${log.label} ${log.pts}
+                    </span>
+                `).join("");
+            } else {
+                reasonContent = `<div class="success-msg">Highly Active & Reliable Profile</div>`;
+            }
+
+            reasonArea.innerHTML = `
+                <div style="color: var(--success); font-weight: bold; margin-bottom: 10px;">♦️Reason:-</div>
+                ${reasonContent}
+            `;
+
+            if(score < 4) {
+                scoreEl.style.color = "var(--danger)";
+                badgeArea.innerHTML = `<span class="status-badge" style="background:rgba(255,77,77,0.2); color:var(--danger)">Below Average</span>`;
+                alertArea.innerHTML = `<div class="warning-box"><i class="fa-solid fa-triangle-exclamation"></i></div>`;
+            } else if(score < 8) {
+                scoreEl.style.color = "#fbbf24";
+                badgeArea.innerHTML = `<span class="status-badge" style="background:rgba(251,191,36,0.2); color:#fbbf24">Average</span>`;
+                alertArea.innerHTML = ``;
+            } else {
+                scoreEl.style.color = "var(--success)";
+                badgeArea.innerHTML = `<span class="status-badge" style="background:rgba(0,255,136,0.2); color:var(--success)">Excellent</span>`;
+                alertArea.innerHTML = ``;
+            }
+        }
+    </script>
+</body>
+</html>
