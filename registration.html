@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archer Fight Event Registration</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #ff4757;
+            --secondary: #2ed573;
+            --bg-dark: #1e1e24;
+            --bg-panel: rgba(30, 30, 36, 0.85);
+            --text-light: #f1f2f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Main Landing Page */
+        .landing-container {
+            text-align: center;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+        }
+
+        .highlight { color: var(--primary); }
+
+        .btn-main {
+            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(255, 71, 87, 0.4);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-main:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(255, 71, 87, 0.6);
+        }
+
+        .closed-msg {
+            display: none;
+            background: rgba(255, 71, 87, 0.2);
+            border: 2px solid var(--primary);
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ff4757;
+            text-transform: uppercase;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: var(--bg-panel);
+            width: 90%;
+            max-width: 450px;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            transform: translateY(-50px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: #ccc;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover { color: var(--primary); }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 { font-size: 1.8rem; }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            bottom: 14px; /* Fixed: Anchors the icon nicely inside the input box */
+            color: #aaa;
+            font-size: 1rem;
+            pointer-events: none; /* Fixed: Prevents the icon from blocking clicks */
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 12px 12px 45px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+
+        /* Changes background of time picker icon in some browsers */
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+
+        .checkbox-group input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(45deg, #2ed573, #26de81);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            box-shadow: 0 5px 15px rgba(46, 213, 115, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Animations & Status States */
+        #loading-state, #success-state {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: var(--secondary);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Landing View -->
+    <div class="landing-container">
+        <h1><span class="highlight">Archer Fight</span> Event</h1>
+        
+        <!-- Registration Button -->
+        <button id="register-btn" class="btn-main">
+            <i class="fa-solid fa-crosshairs"></i> Register Now
+        </button>
+
+        <!-- Closed Message Box -->
+        <div id="closed-msg" class="closed-msg">
+            <i class="fa-solid fa-lock"></i> Registration Site Closed
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal"><i class="fa-solid fa-xmark"></i></span>
+            
+            <!-- Registration Form View -->
+            <div id="form-state">
+                <div class="modal-header">
+                    <h2>Form</h2>
+                    <p style="color: #aaa; font-size: 0.9rem; margin-top: 5px;">Fill out the details to enter the arena</p>
+                </div>
+                <form id="registration-form">
+                    <div class="input-group">
+                        <label>Your Username</label>
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="username" placeholder="e.g. ShadowArcher99" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Your Server Name</label>
+                        <i class="fa-solid fa-server"></i>
+                        <input type="text" id="serverName" placeholder="e.g. Asia-Pacific 1" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Preferred Time (1st Choice)</label>
+                        <i class="fa-regular fa-clock"></i>
+                        <input type="time" id="prefTime1" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Preferred Time (2nd Choice)</label>
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <input type="time" id="prefTime2" required>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="terms" required>
+                        <label for="terms">I agree to the Terms & Services</label>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        <i class="fa-solid fa-paper-plane"></i> Register
+                    </button>
+                </form>
+            </div>
+
+            <!-- Loading Animation View -->
+            <div id="loading-state">
+                <div class="spinner"></div>
+                <h3>Registering...</h3>
+                <p style="color: #aaa;">Please Wait</p>
+            </div>
+
+            <!-- Success Message View -->
+            <div id="success-state">
+                <i class="fa-solid fa-circle-check success-icon"></i>
+                <h2>Successfully Registered!</h2>
+                <p style="color: #aaa;"></p>
+                <button type="button" class="btn-main" style="margin-top: 20px; font-size: 1rem; padding: 10px 20px;" id="close-success">Close</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Firebase SDK Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCyE1coLVha22Y_5E71n4FW1VQNHf3s81Q",
+            authDomain: "vs-1-12110.firebaseapp.com",
+            databaseURL: "https://vs-1-12110-default-rtdb.firebaseio.com",
+            projectId: "vs-1-12110",
+            storageBucket: "vs-1-12110.firebasestorage.app",
+            messagingSenderId: "512391960635",
+            appId: "1:512391960635:web:1ebc6d07d5bbd5adcca41e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // -- DATE LOGIC --
+        // Starts showing "Closed" exactly on June 30th at midnight
+        const checkCutoffDate = () => {
+            const cutoffDate = new Date('2026-06-30T00:00:00');
+            const currentDate = new Date();
+            
+            if (currentDate >= cutoffDate) {
+                document.getElementById('register-btn').style.display = 'none';
+                document.getElementById('closed-msg').style.display = 'block';
+            }
+        };
+        
+        checkCutoffDate();
+
+        // -- MODAL LOGIC --
+        const modal = document.getElementById('modal');
+        const registerBtn = document.getElementById('register-btn');
+        const closeModalBtn = document.getElementById('close-modal');
+        const closeSuccessBtn = document.getElementById('close-success');
+
+        const formState = document.getElementById('form-state');
+        const loadingState = document.getElementById('loading-state');
+        const successState = document.getElementById('success-state');
+        const regForm = document.getElementById('registration-form');
+
+        registerBtn.addEventListener('click', () => {
+            modal.classList.add('active');
+            resetModalViews();
+        });
+
+        const closeModal = () => {
+            modal.classList.remove('active');
+        };
+        
+        closeModalBtn.addEventListener('click', closeModal);
+        closeSuccessBtn.addEventListener('click', closeModal);
+
+        function resetModalViews() {
+            formState.style.display = 'block';
+            loadingState.style.display = 'none';
+            successState.style.display = 'none';
+            regForm.reset();
+        }
+
+        // -- FORM SUBMISSION LOGIC --
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            formState.style.display = 'none';
+            loadingState.style.display = 'flex';
+
+            const username = document.getElementById('username').value;
+            const serverName = document.getElementById('serverName').value;
+            const prefTime1 = document.getElementById('prefTime1').value;
+            const prefTime2 = document.getElementById('prefTime2').value;
+            
+            try {
+                const registrationsRef = ref(db, 'ArcherFightRegistrations');
+                await push(registrationsRef, {
+                    username: username,
+                    serverName: serverName,
+                    preferredTime1: prefTime1,
+                    preferredTime2: prefTime2,
+                    registeredAt: new Date().toISOString()
+                });
+
+                setTimeout(() => {
+                    loadingState.style.display = 'none';
+                    successState.style.display = 'flex';
+                }, 1000);
+
+            } catch (error) {
+                console.error("Error writing to Firebase:", error);
+                alert("Something went wrong with the database connection. Please try again.");
+                loadingState.style.display = 'none';
+                formState.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
