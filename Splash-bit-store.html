@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splash Store | Bitcoin Exchange</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #f7931a; 
+            --secondary: #212121; 
+            --success: #28a745;
+            --danger: #dc3545;
+            --bg: #f1f3f6; 
+            --white: #ffffff; 
+            --text: #212121; 
+            --shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); overflow-x: hidden; }
+
+        /* --- Header --- */
+        header { 
+            background: var(--primary); 
+            padding: 10px 5%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .logo { font-size: 20px; font-weight: 700; font-style: italic; cursor: pointer; }
+        
+        .nav-icons { display: flex; gap: 15px; align-items: center; }
+        
+        .user-profile-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(250, 250, 250, 0.15);
+            padding: 5px 12px;
+            border-radius: 50px;
+        }
+        .user-details { line-height: 1.1; font-size: 11px; }
+        .logout-btn { cursor: pointer; font-size: 18px; margin-left: 5px; transition: 0.2s; }
+        .logout-btn:hover { color: var(--secondary); }
+
+        .cart-icon-container { position: relative; cursor: pointer; margin-left: 5px; }
+        .cart-badge { position: absolute; top: -8px; right: -10px; background: var(--danger); font-size: 10px; padding: 2px 5px; border-radius: 50%; border: 1px solid white; }
+
+        /* --- Store UI --- */
+        .container { max-width: 1200px; margin: auto; padding: 15px; }
+        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (min-width: 900px) { .product-grid { grid-template-columns: repeat(4, 1fr); } }
+
+        .card { 
+            background: var(--white); border-radius: 12px; padding: 15px; 
+            display: flex; flex-direction: column; position: relative; box-shadow: var(--shadow);
+        }
+        .trending { position: absolute; top: 8px; left: 8px; background: var(--success); color: white; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 600; z-index: 2; }
+        .card img { width: 100%; height: 120px; object-fit: contain; margin-bottom: 10px; }
+        .card h3 { font-size: 13px; font-weight: 600; height: 38px; overflow: hidden; color: #444; }
+        .price { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--primary); }
+
+        .qty-box { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; background: #f8f9fa; border-radius: 8px; padding: 4px 8px; }
+        .qty-box button { border: none; background: #e9ecef; width: 25px; height: 25px; border-radius: 6px; cursor: pointer; }
+        
+        .btn-add { background: #eee; color: #333; border: none; width: 100%; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 11px; cursor: pointer; margin-bottom: 5px; }
+        .btn-buy { background: var(--primary); color: white; border: none; width: 100%; padding: 10px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; text-transform: uppercase; }
+
+        /* --- Cart & Modals --- */
+        #cart-page { display: none; padding: 20px; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .cart-item { background: white; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; border-radius: 12px; box-shadow: var(--shadow); }
+        .cart-item img { width: 50px; height: 50px; object-fit: contain; }
+        .remove-btn { color: var(--danger); cursor: pointer; padding: 10px; }
+        
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-content { background: white; padding: 25px; width: 85%; max-width: 340px; border-radius: 15px; text-align: center; }
+        .modal-content input { width: 100%; padding: 12px; margin: 15px 0; border: 2px solid #eee; border-radius: 8px; outline: none; }
+        
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
+        .btn-cancel { background: transparent; color: #888; border: none; margin-top: 15px; cursor: pointer; }
+
+        /* Toast */
+        #toast { 
+            visibility: hidden; min-width: 200px; background-color: var(--success); color: #fff; text-align: center; border-radius: 50px; 
+            padding: 10px; position: fixed; z-index: 4000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 13px;
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2s; }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+        .back-btn { background: #666; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-bottom: 15px; display: inline-block; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo" onclick="showStore()">𝚂𝚙𝚕𝚊𝚜𝚑 𝚂𝚝𝚘𝚛𝚎</div>
+        <div class="nav-icons">
+            <div id="userDisplayArea">
+                <div style="cursor:pointer" onclick="openLoginModal()"><i class="fa fa-user-circle fa-lg"></i> Login</div>
+            </div>
+            
+            <div class="cart-icon-container" onclick="showCart()">
+                <i class="fa fa-shopping-cart fa-lg"></i>
+                <span class="cart-badge" id="cartBadge">0</span>
+            </div>
+        </div>
+    </header>
+
+    <div id="toast">Item added!</div>
+
+    <div class="container" id="store-page">
+        <h2 style="margin-bottom: 15px; font-size: 18px;">𝙵𝚎𝚊𝚝𝚞𝚛𝚎𝚍 𝙿𝚛𝚘𝚍𝚞𝚌𝚝𝚜</h2>
+        <div class="product-grid" id="productGrid"></div>
+    </div>
+
+    <!-- Cart Page -->
+    <div class="container" id="cart-page">
+        <div class="back-btn" onclick="showStore()"><i class="fa fa-arrow-left"></i> Back To Page</div>
+        <h2 style="margin-bottom: 20px;">Your Cart</h2>
+        <div id="cartItemsList"></div>
+        <div class="total-bill" id="totalBillArea">
+            <h3>Total: ₿ <span id="totalAmount">0</span></h3>
+            <button class="btn-buy" style="margin-top: 15px;" onclick="handleCheckout()">𝙱𝚞𝚢 & 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎</button>
+            <p style="color: var(--danger); font-size: 11px; margin-top: 8px; font-weight: 600; text-align: center;">𝙽𝚘𝚝𝚎:-𝙳𝚎𝚕𝚎𝚟𝚎𝚛𝚢 𝚂𝚎𝚛𝚟𝚒𝚌𝚎𝚜 𝚁𝚎𝚞𝚒𝚛𝚎𝚍 𝙰𝚍𝚒𝚝𝚒𝚘𝚗𝚊𝚕 𝙲𝚑𝚊𝚛𝚐𝚎𝚜</p>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <i class="fa fa-user-circle fa-3x" style="color:var(--primary); margin-bottom:10px;"></i>
+            <h3>𝚆𝚎𝚕𝚌𝚘𝚖𝚎 𝙱𝚊𝚌𝚔</h3>
+            <input type="text" id="usernameInput" placeholder="Enter Your Username (e.g. xyz@123)">
+            <button class="btn-confirm" id="loginBtn" onclick="handleLogin()">Login</button>
+            <button class="btn-cancel" onclick="closeModal('loginModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div class="modal" id="alertModal">
+        <div class="modal-content">
+            <h3 id="alertTitle">Alert</h3>
+            <p id="alertMsg" style="margin: 10px 0; color: #555;"></p>
+            <button class="btn-confirm" onclick="closeModal('alertModal')">Got it</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get, update, onValue, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp5fG4-8NkSSP1S6ND6vSk8HeZRXrXz7M",
+            authDomain: "splash-cc98f.firebaseapp.com",
+            databaseURL: "https://splash-cc98f-default-rtdb.firebaseio.com",
+            projectId: "splash-cc98f",
+            storageBucket: "splash-cc98f.firebasestorage.app",
+            messagingSenderId: "526650808551",
+            appId: "1:526650808551:web:af7818987af38b946d2a42"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let currentUserNode = localStorage.getItem('splash_user_node') || null;
+        let currentBalance = 0;
+        let cart = [];
+
+        const products = [
+            { id: 1, name: "Redeem Code ₹100", price: 75000000, display: "75 M", img: "https://litter.catbox.moe/yhfppjz4p0n2fkci.jpg" },
+            { id: 2, name: "Redeem Code ₹50", price: 40000000, display: "40 M", img: "https://litter.catbox.moe/vrjzhjmvrzf0fnui.jpg" },
+            { id: 3, name: "Redeem Code ₹10", price: 15000000, display: "15 M", img: "https://litter.catbox.moe/p2urxj4sxb1xuk99.jpg" },
+            { id: 4, name: "T-Shirt", price: 110000000, display: "110 M", img: "https://litter.catbox.moe/3z4ppouq3p788n6e.jpg" },
+            { id: 5, name: "Sports Water Bottle", price: 250000000, display: "250 M", img: "https://litter.catbox.moe/tgvcbdw0cwcgy9bz.jpg", trending: true },
+            { id: 6, name: "Neckband Pro", price: 1000000000, display: "1 B", img: "https://litter.catbox.moe/0ujhhwgk29iemt0q.jpg", trending: true }
+        ];
+
+        function formatPrice(n) {
+            if (n >= 1000000000) return (n/1000000000).toFixed(1) + " Billion";
+            if (n >= 1000000) return (n/1000000).toFixed(0) + " M";
+            return n;
+        }
+
+        window.renderStore = () => {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = products.map(p => `
+                <div class="card">
+                    ${p.trending ? '<div class="trending">TRENDING</div>' : ''}
+                    <img src="${p.img}">
+                    <h3>${p.name}</h3>
+                    <p class="price">₿ ${p.display}</p>
+                    <div class="qty-box">
+                        <button onclick="changeQty(${p.id}, -1)">-</button>
+                        <span id="qty-${p.id}">1</span>
+                        <button onclick="changeQty(${p.id}, 1)">+</button>
+                    </div>
+                    <button class="btn-add" onclick="addToCart(${p.id})">Add to Cart</button>
+                    <button class="btn-buy" onclick="buyNow(${p.id})">Buy Now</button>
+                </div>
+            `).join('');
+        };
+
+        window.changeQty = (id, delta) => {
+            let el = document.getElementById(`qty-${id}`);
+            el.innerText = Math.max(1, parseInt(el.innerText) + delta);
+        };
+
+        window.addToCart = (id, silent = false) => {
+            const p = products.find(x => x.id === id);
+            const q = parseInt(document.getElementById(`qty-${id}`).innerText);
+            const exists = cart.find(i => i.id === id);
+            if(exists) exists.qty += q; else cart.push({...p, qty: q});
+            updateCartBadge();
+            if(!silent) showToast("Added " + p.name);
+        };
+
+        window.buyNow = (id) => { addToCart(id, true); showCart(); };
+
+        function updateCartBadge() {
+            document.getElementById('cartBadge').innerText = cart.reduce((s, i) => s + i.qty, 0);
+        }
+
+        window.showCart = () => {
+            document.getElementById('store-page').style.display='none';
+            document.getElementById('cart-page').style.display='block';
+            window.scrollTo(0,0);
+            renderCartList();
+        };
+
+        function renderCartList() {
+            const list = document.getElementById('cartItemsList');
+            let total = 0;
+            if(cart.length === 0) {
+                list.innerHTML = "<p style='text-align:center; padding:20px;'>Empty</p>";
+            } else {
+                list.innerHTML = cart.map((item, idx) => {
+                    total += (item.price * item.qty);
+                    return `<div class="cart-item">
+                        <img src="${item.img}">
+                        <div style="flex:1">
+                            <h4 style="font-size:13px">${item.name}</h4>
+                            <p style="font-size:11px; color:var(--primary)">₿ ${formatPrice(item.price * item.qty)} (x${item.qty})</p>
+                        </div>
+                        <i class="fa fa-trash-alt remove-btn" onclick="removeItem(${idx})"></i>
+                    </div>`;
+                }).join('');
+            }
+            document.getElementById('totalAmount').innerText = formatPrice(total);
+            window.currentTotal = total;
+        }
+
+        window.removeItem = (idx) => { cart.splice(idx,1); updateCartBadge(); renderCartList(); };
+
+        // --- AUTH & FIREBASE ---
+
+        function initUserSession(nodeKey) {
+            currentUserNode = nodeKey;
+            localStorage.setItem('splash_user_node', nodeKey);
+            
+            const balanceRef = ref(db, `bitcoin_users/${nodeKey}/balance`);
+            onValue(balanceRef, (snap) => {
+                currentBalance = snap.val() || 0;
+                updateHeaderUI(nodeKey, currentBalance);
+            });
+        }
+
+        function updateHeaderUI(name, balance) {
+            let displayName = name.length > 12 ? name.substring(0, 12) + "..." : name;
+
+            document.getElementById('userDisplayArea').innerHTML = `
+                <div class="user-profile-area">
+                    <i class="fa fa-user-circle fa-lg"></i>
+                    <div class="user-details">
+                        <b title="${name}">${displayName}</b><br>
+                        <span>₿ ${formatPrice(balance)}</span>
+                    </div>
+                    <i class="fa fa-sign-out-alt logout-btn" onclick="logout()" title="Logout"></i>
+                </div>
+            `;
+        }
+
+        window.handleLogin = async () => {
+            const input = document.getElementById('usernameInput').value.trim();
+            if(!input) return customPop("𝚆𝚊𝚒𝚝 ", " 𝙴𝚗𝚝𝚎𝚛 𝚢𝚘𝚞𝚛 𝚞𝚜𝚎𝚛𝚗𝚊𝚖𝚎.");
+            
+            document.getElementById('loginBtn').innerText = "𝙰𝚞𝚝𝚑𝚎𝚗𝚝𝚒𝚌𝚊𝚝𝚒𝚗𝚐...";
+            const snapshot = await get(ref(db, 'users'));
+            let found = null;
+            snapshot.forEach(c => { if(c.val().username === input) found = c.key; });
+
+            if(found) {
+                initUserSession(found);
+                closeModal('loginModal');
+                showToast("Welcome " + found);
+            } else {
+                customPop("𝙴𝚛𝚛𝚘𝚛", "𝚄𝚜𝚎𝚛 𝚗𝚘𝚝 𝚏𝚘𝚞𝚗𝚍.");
+            }
+            document.getElementById('loginBtn').innerText = "Login";
+        };
+
+        window.logout = () => {
+            if(currentUserNode) off(ref(db, `bitcoin_users/${currentUserNode}/balance`));
+            localStorage.removeItem('splash_user_node');
+            currentUserNode = null;
+            location.reload();
+        };
+
+        window.handleCheckout = async () => {
+            if(!currentUserNode) return openLoginModal();
+            if(cart.length === 0) return;
+            
+            if(currentBalance < window.currentTotal) {
+                return customPop("𝙱𝚊𝚕𝚊𝚗𝚌𝚎 𝙻𝚘𝚠", "𝚈𝚘𝚞 𝚗𝚎𝚎𝚍 𝚖𝚘𝚛𝚎 𝙱𝚒𝚝𝚌𝚘𝚒𝚗 𝚝𝚘 𝚌𝚘𝚖𝚙𝚕𝚎𝚝𝚎 𝚝𝚑𝚒𝚜 𝚙𝚞𝚛𝚌𝚑𝚊𝚜𝚎.");
+            }
+
+            if(confirm("Proceed to send order details via Gmail?")) {
+                let orderDetails = cart.map(i => `- ${i.name} (Qty: ${i.qty}) - ₿ ${formatPrice(i.price * i.qty)}`).join("%0A");
+                let totalStr = formatPrice(window.currentTotal);
+                
+                let subject = encodeURIComponent(`New Splash Store Order - ${currentUserNode}`);
+                let body = encodeURIComponent(
+                    `Hello Splash Store Team,\n\n` +
+                    `I want to place an order with the following details:\n\n` +
+                    `User: ${currentUserNode}\n` +
+                    `Order Items:\n${cart.map(i => `- ${i.name} x${i.qty}`).join('\n')}\n\n` +
+                    `Total Amount: ₿ ${totalStr}\n\n` +
+                    `Please verify my balance and process the order.`
+                );
+
+                window.location.href = `mailto:uranetworksresponse@gmail.com?subject=${subject}&body=${body}`;
+                customPop("𝚁𝚎𝚍𝚒𝚛𝚎𝚌𝚝𝚒𝚗𝚐...", "𝙾𝚙𝚎𝚗 𝙴𝚖𝚊𝚒𝚕 𝙵𝚘𝚛 𝚃𝚛𝚊𝚗𝚜𝚊𝚌𝚝𝚒𝚘𝚗.");
+            }
+        };
+
+        window.showStore = () => { 
+            document.getElementById('cart-page').style.display='none'; 
+            document.getElementById('store-page').style.display='block'; 
+        };
+        window.openLoginModal = () => document.getElementById('loginModal').style.display='flex';
+        window.closeModal = (id) => document.getElementById(id).style.display='none';
+        window.customPop = (t, m) => {
+            document.getElementById('alertTitle').innerText = t;
+            document.getElementById('alertMsg').innerText = m;
+            document.getElementById('alertModal').style.display='flex';
+        };
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(() => { t.className = t.className.replace("show", ""); }, 2500);
+        }
+
+        renderStore();
+        if(currentUserNode) initUserSession(currentUserNode);
+    </script>
+</body>
+</html>
