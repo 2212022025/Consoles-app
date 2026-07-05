@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLF-Services | Verified Access</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #030005;
+            --card: rgba(15, 15, 25, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: linear-gradient(135deg, #00f2ff 0%, #7000ff 100%);
+            --success: #00ff88;
+            --muted: #a0a0b0;
+            --glow: rgba(112, 0, 255, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body { 
+            background: var(--bg); 
+            color: white; 
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(112, 0, 255, 0.1) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Splash Screen */
+        #splash {
+            position: fixed; inset: 0; background: #000; z-index: 5000;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #splash h1 {
+            font-size: 1.2rem;
+            letter-spacing: 5px;
+            background: var(--accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glowText 2s infinite alternate;
+        }
+
+        @keyframes glowText {
+            from { filter: drop-shadow(0 0 2px #00f2ff); }
+            to { filter: drop-shadow(0 0 10px #7000ff); }
+        }
+
+        .main-wrapper {
+            max-width: 450px; margin: 0 auto; padding: 60px 24px;
+            min-height: 100vh; display: flex; flex-direction: column;
+        }
+
+        header { margin-bottom: 50px; text-align: center; }
+        header h2 { 
+            font-size: 2.2rem; 
+            font-weight: 800; 
+            background: linear-gradient(to bottom, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header p { color: var(--success); font-size: 0.75rem; margin-top: 10px; letter-spacing: 2px; font-weight: 600; text-transform: uppercase; }
+
+        /* Task Cards */
+        .task-list { display: flex; flex-direction: column; gap: 20px; }
+        .task-card {
+            background: var(--card); 
+            border: 1px solid var(--border);
+            padding: 25px; border-radius: 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            backdrop-filter: blur(10px);
+            transition: 0.4s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .task-card:hover { border-color: rgba(0, 242, 255, 0.4); transform: translateY(-2px); }
+        .task-card.completed { 
+            border-color: var(--success); 
+            background: rgba(0, 255, 136, 0.05);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+        
+        .task-info h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+        .task-info span { font-size: 0.8rem; color: var(--muted); display: block; }
+
+        .btn-start {
+            background: var(--accent); color: white; border: none;
+            padding: 12px 24px; border-radius: 12px; font-weight: 800;
+            cursor: pointer; font-size: 0.85rem;
+            box-shadow: 0 4px 15px var(--glow);
+            transition: 0.3s;
+        }
+        .btn-start:hover:not(:disabled) { transform: scale(1.05); filter: brightness(1.2); }
+        .btn-start:disabled { background: #1a1a25; color: #444; cursor: not-allowed; box-shadow: none; }
+
+        /* Unlock Button */
+        #finalUnlock {
+            margin-top: 50px; width: 100%; height: 70px;
+            border-radius: 20px; border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03); color: #555;
+            font-weight: 800; cursor: pointer; transition: 0.5s;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            font-size: 1rem; letter-spacing: 1px;
+        }
+        #finalUnlock.ready { 
+            background: var(--success); 
+            color: #000; 
+            border: none; 
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.4);
+            animation: readyPulse 2s infinite;
+        }
+
+        @keyframes readyPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed; inset: 0; background: #000; z-index: 2000;
+            display: none; flex-direction: column;
+        }
+        .top-bar { 
+            padding: 20px; display: flex; justify-content: space-between; 
+            align-items: center; background: #050505; 
+            border-bottom: 1px solid var(--border); 
+        }
+        #timer { 
+            font-weight: 800; color: var(--success); 
+            font-size: 1.5rem; font-family: monospace;
+            text-shadow: 0 0 10px var(--success);
+        }
+        iframe { border: none; flex-grow: 1; width: 100%; background: #fff; }
+
+        /* Pop Pop Modals */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 4000; display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px);
+        }
+        .popup-card {
+            background: linear-gradient(180deg, #151520 0%, #050505 100%); 
+            padding: 40px 30px; border-radius: 35px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 90%; max-width: 380px; text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        .popup-card h3 { margin-bottom: 15px; font-size: 1.5rem; font-weight: 800; }
+        .popup-card p { color: var(--muted); line-height: 1.6; font-size: 1rem; margin-bottom: 25px; }
+        
+        .popup-card input {
+            width: 100%; padding: 20px; margin-bottom: 20px;
+            background: rgba(0,0,0,0.5); border: 1px solid #333; color: white;
+            border-radius: 18px; text-align: center; font-size: 1.1rem;
+            outline: none; transition: 0.3s;
+        }
+        .popup-card input:focus { border-color: #00f2ff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+
+        .popup-card button {
+            width: 100%; padding: 18px; border-radius: 18px; border: none;
+            background: var(--accent); color: white; font-weight: 800; cursor: pointer;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash"><h1>WELCOME TO VLF-SERVICES</h1></div>
+
+    <div class="main-wrapper">
+        <header>
+            <h2>VLF-Account Tab</h2>
+            <p id="status-text">Complete Tasks To Unlock Your Account</p>
+        </header>
+
+        <div class="task-list">
+            <!-- Task 1 -->
+            <div class="task-card" id="card1">
+                <div class="task-info">
+                    <h4>TASK-1</h4>
+                    <span id="label1">Time Required: 5 Minutes</span>
+                </div>
+                <button class="btn-start" id="btn1" onclick="startTask('app')">Start</button>
+            </div>
+
+            <!-- Task 2 -->
+            <div class="task-card" id="card2">
+                <div class="task-info">
+                    <h4>TASK-2</h4>
+                    <span id="label2">Time Required: 20 Minutes</span>
+                </div>
+                <button class="btn-start" id="btn2" onclick="showTask2Popup()">Start</button>
+            </div>
+        </div>
+
+        <button id="finalUnlock" disabled onclick="askUserAndFinish()">
+            <i data-lucide="lock"></i> UNLOCK ACCOUNT
+        </button>
+    </div>
+
+    <!-- Iframe View -->
+    <div class="overlay" id="overlay">
+        <div class="top-bar">
+            <button onclick="closeOverlay()" style="background:rgba(255,255,255,0.05); border:1px solid #333; color:white; padding:10px 20px; border-radius:12px; cursor:pointer; font-weight:800;">Back</button>
+            <div id="timer">00:00</div>
+            <div style="width:60px"></div>
+        </div>
+        <iframe id="targetFrame"></iframe>
+    </div>
+
+    <!-- Task 2 Text Message Popup -->
+    <div id="msgPopup" class="modal">
+        <div class="popup-card">
+            <div style="background:rgba(0, 242, 255, 0.1); width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;">
+                <i data-lucide="terminal" size="32" style="color:#00f2ff"></i>
+            </div>
+            <h3>System Instruction</h3>
+            <p>Enter Username:- 123 For Login Consoles</p>
+            <button onclick="closeMsgAndStart()">Understood & Start</button>
+        </div>
+    </div>
+
+    <!-- Final Identity Popup -->
+    <div id="userPopup" class="modal">
+        <div class="popup-card">
+            <div style="background:rgba(0, 255, 136, 0.1); width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;">
+                <i data-lucide="user-check" size="32" style="color:var(--success)"></i>
+            </div>
+            <h3>Final Step</h3>
+            <p>Enter your Personal Username to complete the unlock process.</p>
+            <input type="text" id="finalUsernameInput" placeholder="Your Username">
+            <button onclick="completeUnlock()">Unlock Now</button>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const KEYS = {
+            t1_done: 'vlf_t1_done',
+            t2_done: 'vlf_t2_done',
+            t1_time: 'vlf_t1_time',
+            t2_time: 'vlf_t2_time'
+        };
+
+        let progress = {
+            app: localStorage.getItem(KEYS.t1_done) === 'true',
+            console: localStorage.getItem(KEYS.t2_done) === 'true',
+            appTime: parseInt(localStorage.getItem(KEYS.t1_time)) || 300, 
+            consoleTime: parseInt(localStorage.getItem(KEYS.t2_time)) || 1200 
+        };
+
+        let activeInterval;
+
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('splash').style.opacity = '0';
+                setTimeout(() => document.getElementById('splash').remove(), 800);
+            }, 1500);
+
+            renderUI();
+        };
+
+        function renderUI() {
+            if (progress.app) {
+                markTaskComplete('1');
+            } else {
+                updateLabel('1', progress.appTime);
+            }
+
+            if (progress.console) {
+                markTaskComplete('2');
+            } else {
+                updateLabel('2', progress.consoleTime);
+            }
+
+            if (progress.app && progress.console) {
+                const btn = document.getElementById('finalUnlock');
+                btn.disabled = false;
+                btn.classList.add('ready');
+                btn.innerHTML = '<i data-lucide="unlock"></i> UNLOCK ACCOUNT NOW';
+                document.getElementById('status-text').innerText = "All Tasks Verified";
+                document.getElementById('status-text').style.color = "var(--success)";
+                lucide.createIcons();
+            }
+        }
+
+        function updateLabel(id, seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            document.getElementById(`label${id}`).innerText = `Remaining: ${m}m ${s}s`;
+        }
+
+        function showTask2Popup() {
+            document.getElementById('msgPopup').style.display = 'flex';
+        }
+
+        function closeMsgAndStart() {
+            document.getElementById('msgPopup').style.display = 'none';
+            startTask('console');
+        }
+
+        function startTask(type) {
+            const url = type === 'app' ? 'https://ura-x-crates.netlify.app/' : 'https://consolesprox.netlify.app/';
+            document.getElementById('targetFrame').src = url;
+            document.getElementById('overlay').style.display = 'flex';
+            runTimer(type);
+        }
+
+        function runTimer(type) {
+            clearInterval(activeInterval);
+            let time = type === 'app' ? progress.appTime : progress.consoleTime;
+            const display = document.getElementById('timer');
+
+            activeInterval = setInterval(() => {
+                if (time <= 0) {
+                    clearInterval(activeInterval);
+                    finishTask(type);
+                    return;
+                }
+                time--;
+
+                if (type === 'app') {
+                    progress.appTime = time;
+                    localStorage.setItem(KEYS.t1_time, time);
+                    updateLabel('1', time);
+                } else {
+                    progress.consoleTime = time;
+                    localStorage.setItem(KEYS.t2_time, time);
+                    updateLabel('2', time);
+                }
+
+                const m = Math.floor(time / 60);
+                const s = time % 60;
+                display.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function finishTask(type) {
+            if (type === 'app') {
+                progress.app = true;
+                localStorage.setItem(KEYS.t1_done, 'true');
+            } else {
+                progress.console = true;
+                localStorage.setItem(KEYS.t2_done, 'true');
+            }
+            alert("Verification Success!");
+            closeOverlay();
+            renderUI();
+        }
+
+        function markTaskComplete(id) {
+            const card = document.getElementById(`card${id}`);
+            const btn = document.getElementById(`btn${id}`);
+            card.classList.add('completed');
+            btn.innerText = "Verified";
+            btn.disabled = true;
+            document.getElementById(`label${id}`).innerText = "Task Completed ✅";
+        }
+
+        function closeOverlay() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('targetFrame').src = "";
+            clearInterval(activeInterval);
+        }
+
+        function askUserAndFinish() {
+            document.getElementById('userPopup').style.display = 'flex';
+        }
+
+        function completeUnlock() {
+            const user = document.getElementById('finalUsernameInput').value;
+            if (!user) return alert("Please enter your username first");
+
+            const subject = encodeURIComponent("VLF-SERVICES: Account Unlock Request");
+            const body = encodeURIComponent(
+                `LOG DATA:\n----------------\n` +
+                `USER: ${user}\n` +
+                `TASK 1: SUCCESSFUL (5m)\n` +
+                `TASK 2: SUCCESSFUL (20m)\n` +
+                `CONSOLE MESSAGE: 123 SHOWN\n` +
+                `STATUS: VERIFIED`
+            );
+
+            window.location.href = `mailto:uranetworksresponse@gmail.com?subject=${subject}&body=${body}`;
+        }
+    </script>
+</body>
+</html>
