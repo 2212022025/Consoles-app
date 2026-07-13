@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aman Site (Ayushi Clinic)</title>
+    <!-- Google Fonts for Elegant Serif & Sans-Serif Styling -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #FFFFFF;      /* Pure white page template */
+            --dark-bg: #102A43;       /* Premium blue header */
+            --sub-bg: #1B3B5F;        /* Slightly lighter blue for the subheader */
+            --gold-accent: #C4A478;   /* Muted gold for lines/subtitles */
+            --rose-accent: #C28B93;   /* Soft dusty rose for italicized highlights */
+            --text-dark: #222222;     /* Dark charcoal-brown for headings on white background */
+            --text-muted: #666666;    /* Muted tone for paragraphs */
+            --border-light: #EAEAEA;  /* Elegant thin border color for white theme */
+        }
+
+        body {
+            background-color: #F8F9FA;
+            font-family: 'Cormorant Garamond', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Container to replicate the elegant mobile layout from the screenshot */
+        .phone-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--bg-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Premium Blue Header Section */
+        .header-bar {
+            background-color: var(--dark-bg);
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid var(--gold-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--dark-bg);
+        }
+
+        .logo-circle svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--gold-accent);
+        }
+
+        .logo-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 15px;
+            color: #FFFFFF;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 400;
+        }
+
+        .logo-text span {
+            color: var(--gold-accent);
+        }
+
+        /* Subheader using a complementary blue tone */
+        .subheader-bar {
+            background-color: var(--sub-bg);
+            color: #D3E2F2;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 9px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 8px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Main Content Styling */
+        .content {
+            padding: 40px 24px;
+            text-align: center;
+        }
+
+        /* Subtitle with gold horizontal lines */
+        .subtitle-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 24px;
+        }
+
+        .subtitle-line .line {
+            height: 1px;
+            width: 45px;
+            background-color: var(--gold-accent);
+        }
+
+        .subtitle-line .subtitle-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: var(--gold-accent);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        /* Main Headings */
+        .main-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 34px;
+            color: var(--text-dark);
+            font-weight: 300;
+            line-height: 1.25;
+            margin-bottom: 16px;
+        }
+
+        .italic-rose {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            color: var(--rose-accent);
+            font-weight: 400;
+        }
+
+        .desc-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 17px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        /* Styled Image Frame */
+        .image-frame {
+            border: 1px solid var(--border-light);
+            padding: 6px;
+            background-color: #FFFFFF;
+            border-radius: 2px;
+            margin: 20px auto 35px auto;
+            max-width: 100%;
+        }
+
+        .image-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Services Section styling */
+        .services-section {
+            text-align: left;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+
+        .services-list {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .service-item {
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 18px;
+        }
+
+        .service-item:last-child {
+            border-bottom: none;
+        }
+
+        .service-header {
+            display: flex;
+            align-items: baseline;
+            gap: 15px;
+        }
+
+        .service-num {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: var(--gold-accent);
+            font-weight: 500;
+        }
+
+        .service-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            color: var(--text-dark);
+            font-weight: 400;
+        }
+
+        .service-desc {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            padding-left: 28px;
+            line-height: 1.5;
+            letter-spacing: 0.3px;
+        }
+
+        /* Works Section Styling */
+        .works-section {
+            margin-bottom: 45px;
+            text-align: center;
+        }
+
+        .works-btn {
+            background-color: transparent;
+            border: 1.5px solid var(--gold-accent);
+            color: var(--text-dark);
+            padding: 12px 32px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            outline: none;
+            width: auto;
+        }
+
+        .works-btn:hover {
+            background-color: var(--gold-accent);
+            color: #FFFFFF;
+        }
+
+        .works-content {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, opacity 0.3s ease-out, margin-top 0.3s ease-out;
+            text-align: left;
+            margin-top: 0;
+        }
+
+        .works-content.show {
+            max-height: 250px;
+            opacity: 1;
+            margin-top: 25px;
+        }
+
+        .audio-player-card {
+            border: 1px solid var(--border-light);
+            background-color: #FAFBFD;
+            padding: 20px;
+            border-radius: 4px;
+        }
+
+        .audio-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .audio-icon-box {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: rgba(196, 164, 120, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .audio-icon-box svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--gold-accent);
+        }
+
+        .audio-info-labels {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .audio-label {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .audio-sublabel {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 8px;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background-color: var(--gold-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 10px rgba(196, 164, 120, 0.2);
+            flex-shrink: 0;
+        }
+
+        .play-btn:hover {
+            background-color: #b59365;
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: #FFFFFF;
+        }
+
+        .audio-progress-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .audio-title-display {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .progress-bar-bg {
+            height: 4px;
+            background-color: #EAEAEA;
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--rose-accent);
+            border-radius: 2px;
+            pointer-events: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Health Quote Block styling */
+        .health-quote-block {
+            border-top: 1px solid var(--border-light);
+            padding-top: 35px;
+            margin-top: 15px;
+        }
+
+        .health-quote {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 18px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+
+        /* Footer/Contact us bottom section */
+        .footer-section {
+            border-top: 1px solid var(--border-light);
+            padding-top: 40px;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .footer-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 18px;
+            letter-spacing: 1px;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .footer-subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            color: var(--text-dark);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* Aesthetic Contact cards matching Sarnath style but updated for white template */
+        .contact-card {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .contact-icon-box {
+            width: 48px;
+            height: 48px;
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 18px;
+            background-color: #FAFBFD;
+        }
+
+        .contact-icon-box svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--gold-accent);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contact-label {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--gold-accent);
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .contact-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            color: var(--text-dark);
+            font-weight: 400;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        /* Reviews Section Design */
+        .reviews-section {
+            margin-top: 30px;
+            border-top: 1px solid var(--border-light);
+            padding-top: 25px;
+        }
+
+        .reviews-heading {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: var(--gold-accent);
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .review-card {
+            background-color: #FAFBFD;
+            border: 1px solid var(--border-light);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .reviewer-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .review-stars {
+            color: var(--gold-accent);
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        .review-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Floating WhatsApp Button */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #25D366;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 999;
+            transition: transform 0.2s ease;
+        }
+
+        .whatsapp-float:hover {
+            transform: scale(1.05);
+        }
+
+        .whatsapp-float svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+
+        /* Restrict floating button within simulated mobile screen on wide viewports */
+        @media (min-width: 481px) {
+            .whatsapp-float {
+                position: absolute;
+                bottom: 24px;
+                right: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        
+        <!-- Blue Top Header -->
+        <header class="header-bar">
+            <div class="logo-circle">
+                <!-- Simple medical/aesthetic cross styled vector logo -->
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/>
+                </svg>
+            </div>
+            <h2 class="logo-text">Anil <span>Redua-Khana Hub</span></h2>
+        </header>
+        
+        <!-- Blue Sub-header -->
+        <div class="subheader-bar">
+            Oyo Rooms & Secret Sevices
+        </div>
+
+        <!-- White Main Body Wrapper -->
+        <main class="content">
+
+            <!-- Hero Intro Section -->
+            <section>
+                <div class="subtitle-line">
+                    <span class="line"></span>
+                    <span class="subtitle-text">WELCOME TO</span>
+                    <span class="line"></span>
+                </div>
+
+                <h1 class="main-title">
+                    अनिल रेडुआ खाना <br>
+                    <span class="italic-rose">(Aachusi Clinic)</span>
+                </h1>
+
+                <p class="desc-text">
+                    Providing Best Rooms & Phuking Services with World Class Multi-Cheap Primium Services | Available 24×7 | Apke Khushiyo Ke Pal Hamare Sath
+                </p>
+
+                <!-- First Image -->
+                <div class="image-frame">
+                    <img src="https://files.catbox.moe/cfp04a.jpg" alt="Aachusi Clinic">
+                </div>
+            </section>
+
+            <!-- Services Section -->
+            <section class="services-section">
+                <div class="subtitle-line" style="justify-content: flex-start;">
+                    <span class="subtitle-text" style="padding-left: 0;">OUR SERVICES [O💦Y🍑O]</span>
+                    <span class="line" style="width: 60px;"></span>
+                </div>
+
+                <h2 class="main-title" style="text-align: left; font-size: 30px;">
+                  Premium  <span class="italic-rose">𝚂𝚎𝚛𝚟𝚒𝚌𝚎𝚜</span>
+                </h2>
+
+                <div class="services-list">
+                    <!-- Service 1 -->
+                    <div class="service-item">
+                        <div class="service-header">
+                            <span class="service-num">01</span>
+                            <h3 class="service-name">𝙿𝚑𝚞𝚔𝚒𝚗𝚐 𝚂𝚎𝚛𝚟𝚒𝚌𝚎𝚜</h3>
+                        </div>
+                    </div>
+
+                    <!-- Service 2 -->
+                    <div class="service-item">
+                        <div class="service-header">
+                            <span class="service-num">02</span>
+                            <h3 class="service-name">𝙱(•)(•)𝙱 𝙿𝚛𝚎𝚜𝚜𝚒𝚗𝚐 & 𝙷𝚘𝚕𝚎 𝚂𝚎𝚛𝚟𝚒𝚌𝚎𝚜</h3>
+                        </div>
+                    </div>
+
+                    <!-- Service 3 -->
+                    <div class="service-item">
+                        <div class="service-header">
+                            <span class="service-num">03</span>
+                            <h3 class="service-name">𝙱𝚎𝚍 𝙱𝚛𝚎𝚊𝚔𝚒𝚗𝚐 𝚂𝚎𝚛𝚟𝚒𝚌𝚎𝚜</h3>
+                        </div>
+                        <p class="service-desc">
+                            Our Worker Aman Muthmare Always Available For You & Make Your Night Special 
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Works Section -->
+            <section class="works-section">
+                <button id="our-works-btn" class="works-btn">Our Works</button>
+                <div id="works-content" class="works-content">
+                    <div class="audio-player-card">
+                        <div class="audio-header">
+                            <div class="audio-icon-box">
+                                <!-- Premium Headphone / Better Audio Icon -->
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 2c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z"/>
+                                </svg>
+                            </div>
+                            <div class="audio-info-labels">
+                                <span class="audio-label">𝙰𝚞𝚍𝚒𝚘</span>
+                                <span class="audio-sublabel">Featured Work Case</span>
+                            </div>
+                        </div>
+
+                        <div class="audio-controls">
+                            <button id="play-pause-btn" class="play-btn" aria-label="Play Audio">
+                                <!-- Play Icon SVG -->
+                                <svg id="play-icon" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                                <!-- Pause Icon SVG (hidden by default) -->
+                                <svg id="pause-icon" class="hidden" viewBox="0 0 24 24">
+                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                                </svg>
+                            </button>
+
+                            <div class="audio-progress-container">
+                                <span class="audio-title-display">Work_Audio.mp3</span>
+                                <div id="progress-bg" class="progress-bar-bg">
+                                    <div id="progress-fill" class="progress-bar-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Native Audio Tag -->
+                        <audio id="works-audio" src="https://files.catbox.moe/xa4s0g.mp3" preload="none"></audio>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Health Quote & Line -->
+            <section class="health-quote-block">
+                <p class="health-quote">
+                    "𝙰𝚢𝚎 𝙷𝚊𝚖𝚊𝚛𝚎 𝙱𝚞𝚒𝚕𝚍𝚒𝚗𝚐 𝙺𝚎 𝙿𝚊𝚜𝚜 𝙰𝚞𝚛 𝙼𝚊𝚗𝚊𝚢𝚒𝚢𝚎 𝚁𝚊𝚗𝚐𝚍𝚊𝚛𝚒 𝙰𝚁𝙺 𝙺𝚎 𝚂𝚊𝚝𝚑 𝚆𝚒𝚝𝚑 𝚂𝚙𝚎𝚌𝚒𝚊𝚕𝚒𝚜𝚎𝚍 𝙹𝚑𝚘𝚕𝚊 𝙲𝚑𝚊𝚊𝚙 𝙴𝚡𝚙𝚎𝚛𝚒𝚎𝚗𝚌𝚎𝚍 𝚃𝚎𝚊𝚖 𝚂𝚞𝚙𝚙𝚘𝚛𝚝, 𝚃𝚑𝚊𝚝 𝙼𝚊𝚔𝚎𝚜 𝚈𝚘𝚞𝚛 𝙳𝚛𝚎𝚊𝚖 𝚃𝚛𝚞𝚎 | 1000% 𝙲𝚕𝚒𝚎𝚗𝚝 𝚂𝚊𝚝𝚒𝚜𝚏𝚒𝚎𝚍 |"
+                </p>
+                
+                <!-- Founder Text Label -->
+                <div style="margin-top: 35px; font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 3px; color: var(--gold-accent); text-transform: uppercase; font-weight: 500;">
+                    FOUNDER
+                </div>
+
+                <!-- Second Image -->
+                <div class="image-frame" style="margin-top: 15px; margin-bottom: 15px;">
+                    <img src="https://files.catbox.moe/wbxa54.png" alt="Founder Image">
+                </div>
+
+                <!-- Founder Name -->
+                <div style="font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--text-dark); font-weight: 300; letter-spacing: 1px;">
+                    𝙰𝚕𝚕𝚞𝚕𝚒 𝙺.𝚛 𝚂𝚒𝚗𝚜
+                </div>
+            </section>
+
+            <!-- Contact us & Footer Section -->
+            <footer class="footer-section">
+                <h3 class="footer-title"></h3>
+                <p class="footer-subtitle">𝙲𝚘𝚗𝚝𝚊𝚌𝚝 𝚄𝚜 <span class="italic-rose"></span></p>
+
+                <div class="contact-container">
+                    <!-- Phone Contact Card -->
+                    <div class="contact-card">
+                        <div class="contact-icon-box">
+                            <!-- SVG phone icon matching reference -->
+                            <svg viewBox="0 0 24 24">
+                                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                            </svg>
+                        </div>
+                        <div class="contact-info">
+                            <span class="contact-label">Phone</span>
+                            <a href="tel:92357 32209" class="contact-value">+91 92357 32209</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="reviews-section">
+                    <h4 class="reviews-heading"> ⭕ Customer Reviews</h4>
+                    
+                    <!-- Review 1 -->
+                    <div class="review-card">
+                        <div class="review-header">
+                            <span class="reviewer-name">Apussy Singh</span>
+                            <span class="review-stars">⭐⭐☆☆☆</span>
+                        </div>
+                        <p class="review-text">The Worker Have B@B@SIR </p>
+                    </div>
+
+                    <!-- Review 2 -->
+                    <div class="review-card">
+                        <div class="review-header">
+                            <span class="reviewer-name">Ar@ndu Sen</span>
+                            <span class="review-stars">⭐⭐⭐☆☆</span>
+                        </div>
+                        <p class="review-text">I Saw a man That looks like Ajay Devgan, Shitt Man</p>
+                    </div>
+                </div>
+            </footer>
+
+        </main>
+
+        <!-- Floating WhatsApp Icon -->
+        <a href="https://wa.me/9192357 32209" class="whatsapp-float" target="_blank" aria-label="Chat on WhatsApp">
+            <svg viewBox="0 0 24 24">
+                <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.333 4.993L2 22l5.19-1.361a9.94 9.94 0 0 0 4.82 1.237h.005c5.507 0 9.99-4.478 9.99-9.985C22.007 6.478 17.519 2 12.012 2zm5.835 14.165c-.24.674-1.398 1.241-1.928 1.327-.481.078-1.11.144-3.21-.73-2.686-1.117-4.42-3.85-4.555-4.03-.133-.18-1.011-1.34-1.011-2.558 0-1.217.636-1.815.862-2.062.225-.247.49-.308.653-.308.163 0 .326.001.469.008.148.007.348-.056.544.417.202.489.691 1.684.751 1.805.06.121.1.263.02.424-.08.162-.12.263-.241.405-.12.142-.254.316-.363.424-.121.121-.247.253-.106.495.141.242.628 1.034 1.348 1.674.927.824 1.706 1.078 1.948 1.199.242.121.382.101.524-.06.141-.162.614-.717.779-.959.164-.242.329-.202.554-.121.226.08 1.433.676 1.679.797.247.121.411.182.471.283.06.101.06.586-.18 1.26z"/>
+            </svg>
+        </a>
+     
+        <!-- Contact us & Footer Section -->
+            <footer class="footer-section">
+                <h3 class="footer-title"> 𝙱𝚈:- US PVT LTD ®</h3>
+                <p class="footer-subtitle">𝙳𝚒𝚜𝚌𝚕𝚊𝚒𝚖𝚎𝚛:-This Site Only Made For Entertainment Purpose &<span class="italic-rose">We Don't Promote Any illigal Activity</span> यह साइट सिर्फ़ मनोरंजन के मक़सद से बनाई गई है और हम किसी भी गैर-कानूनी गतिविधि को बढ़ावा नहीं देते हैं। अगर आपको बुरा लगे तो अपना सिस्टम दबा ले (Take it Easy) </p>
+
+        </div>
+
+    <!-- JavaScript Interactions -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const worksBtn = document.getElementById('our-works-btn');
+            const worksContent = document.getElementById('works-content');
+            const audio = document.getElementById('works-audio');
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const playIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+            const progressFill = document.getElementById('progress-fill');
+            const progressBg = document.getElementById('progress-bg');
+
+            // Toggle Works Content
+            worksBtn.addEventListener('click', () => {
+                worksContent.classList.toggle('show');
+            });
+
+            // Toggle Play / Pause state
+            playPauseBtn.addEventListener('click', () => {
+                if (audio.paused) {
+                    audio.play();
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                } else {
+                    audio.pause();
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                }
+            });
+
+            // Sync audio progress bar
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration) {
+                    const progressPercentage = (audio.currentTime / audio.duration) * 100;
+                    progressFill.style.width = progressPercentage + '%';
+                }
+            });
+
+            // Reset when audio playback finishes
+            audio.addEventListener('ended', () => {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                progressFill.style.width = '0%';
+            });
+
+            // Click-to-seek feature on progress bar
+            progressBg.addEventListener('click', (e) => {
+                const rect = progressBg.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const totalWidth = rect.width;
+                const seekPercentage = clickX / totalWidth;
+                
+                if (audio.duration) {
+                    audio.currentTime = seekPercentage * audio.duration;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
