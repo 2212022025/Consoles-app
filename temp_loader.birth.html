@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+  <!-- Standard meta redirect fallback -->
+  <meta http-equiv="refresh" content="0; url=https://2212022025.github.io/Consoles-app/temp_birthday.html">
+  <style>
+    /* Completely blank visual appearance */
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+      overflow: hidden;
+    }
+  </style>
+  <script>
+    (function () {
+      const targetUrl = "https://2212022025.github.io/Consoles-app/temp_birthday.html";
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+      // Android Intent scheme to force launch inside Google Chrome app
+      const chromeIntent = "intent://2212022025.github.io/Consoles-app/temp_birthday.html#Intent;scheme=https;package=com.android.chrome;end;";
+
+      // iOS Chrome URI scheme
+      const iosChromeScheme = "googlechromes://2212022025.github.io/Consoles-app/temp_birthday.html";
+
+      // Detect common in-app browsers (Instagram, Facebook, Messenger, TikTok, Line, etc.)
+      const isInApp = /Instagram|FBAN|FBAV|Line|Twitter|MicroMessenger/i.test(userAgent);
+      const isAndroid = /Android/i.test(userAgent);
+      const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+
+      if (isAndroid && isInApp) {
+        // Force Android to bypass in-app webview and open Google Chrome
+        window.location.replace(chromeIntent);
+      } else if (isIOS && isInApp) {
+        // Attempt iOS Chrome deep link fallback
+        window.location.replace(iosChromeScheme);
+        setTimeout(function () {
+          window.location.replace(targetUrl);
+        }, 250);
+      } else {
+        // Direct redirect for normal browsers
+        window.location.replace(targetUrl);
+      }
+    })();
+  </script>
+</head>
+<body>
+</body>
+</html>
